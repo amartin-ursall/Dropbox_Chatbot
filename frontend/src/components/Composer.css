@@ -1,0 +1,201 @@
+/**
+ * Composer Styles
+ * Diseño minimalista estilo ChatGPT - Mejorado
+ */
+
+.composer {
+  background: linear-gradient(to top, #212121 0%, #212121 85%, transparent 100%);
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-6) var(--space-6) var(--space-6);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.composer__input-wrapper {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  max-width: 900px;
+  width: 75%;
+  background: #2A2A2A;
+  border: 1.5px solid var(--border-medium);
+  border-radius: 22px;
+  padding: var(--space-3) var(--space-4);
+  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 0 rgba(255, 255, 255, 0);
+}
+
+.composer__input-wrapper:hover {
+  border-color: var(--border-strong);
+  background: #2F2F2F;
+}
+
+.composer__input-wrapper:focus-within {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: #333333;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.composer__textarea {
+  flex: 1;
+  min-height: 36px;
+  max-height: 160px;
+  padding: var(--space-2) 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
+  direction: ltr;
+  text-align: left;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+}
+
+.composer__textarea::placeholder {
+  color: #888888;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.composer__textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Custom scrollbar for textarea */
+.composer__textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.composer__textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.composer__textarea::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: var(--radius-full);
+}
+
+.composer__send-button {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFFFFF 0%, #E5E5E5 100%);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.composer__send-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.composer__send-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F5F5F5 100%);
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.composer__send-button:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.composer__send-button:active:not(:disabled) {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.composer__send-button:disabled {
+  background: #3A3A3A;
+  color: #666666;
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.composer__send-button svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 200ms ease;
+}
+
+.composer__send-button:hover:not(:disabled) svg {
+  transform: translateX(2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .composer {
+    padding: var(--space-6) var(--space-4) var(--space-6);
+  }
+
+  .composer__input-wrapper {
+    padding: var(--space-3) var(--space-4);
+    max-width: 100%;
+    margin: 0 var(--space-2);
+  }
+
+  .composer__textarea {
+    font-size: 16px; /* Evita zoom en iOS */
+  }
+
+  .composer__send-button {
+    width: 34px;
+    height: 34px;
+  }
+
+  .composer__send-button svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Animación de envío */
+@keyframes send-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.composer__send-button.sending {
+  animation: send-pulse 0.6s ease-in-out;
+}

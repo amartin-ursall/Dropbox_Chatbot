@@ -1,0 +1,70 @@
+/**
+ * Notification Styles
+ */
+
+.notification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: notification-slide-in 0.3s ease-out;
+  max-width: 300px;
+  width: 100%;
+}
+
+@keyframes notification-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification--success {
+  background-color: var(--success-subtle);
+  border-left: 4px solid var(--success-emphasis);
+  color: var(--success-emphasis);
+}
+
+.notification--error {
+  background-color: var(--danger-subtle);
+  border-left: 4px solid var(--danger-emphasis);
+  color: var(--danger-emphasis);
+}
+
+.notification--info {
+  background-color: var(--info-subtle);
+  border-left: 4px solid var(--info-emphasis);
+  color: var(--info-emphasis);
+}
+
+.notification__content {
+  flex: 1;
+}
+
+.notification__message {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.notification__close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 18px;
+  margin-left: var(--space-3);
+  opacity: 0.7;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.notification__close:hover {
+  opacity: 1;
+}

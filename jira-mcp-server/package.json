@@ -1,0 +1,38 @@
+{
+  "name": "jira-mcp-server",
+  "version": "1.0.0",
+  "description": "Servidor MCP para integrar Jira con Claude Code",
+  "type": "module",
+  "main": "./build/index.js",
+  "bin": {
+    "jira-mcp-server": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsc && node build/index.js",
+    "watch": "tsc --watch",
+    "clean": "rm -rf build",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "jira",
+    "claude",
+    "model-context-protocol"
+  ],
+  "author": "Alberto",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "jira-client": "^8.2.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

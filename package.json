@@ -1,0 +1,12 @@
+{
+  "name": "app-chatbot-dropbox",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "create-tickets": "node create-jira-tickets.js"
+  },
+  "dependencies": {
+    "jira-client": "^8.2.2",
+    "dotenv": "^16.4.5"
+  }
+}

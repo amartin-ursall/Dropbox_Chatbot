@@ -1,0 +1,368 @@
+:root {
+  /* Font Stack - Minimalista */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+
+  /* Spacing Tokens */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Border Radius - Suavizado */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows - Sutiles */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  /* Colors - Paleta Minimalista Moderna */
+  --bg-primary: #212121;
+  --bg-secondary: #212121;
+  --bg-tertiary: #303030;
+  --bg-hover: #303030;
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #FFFFFF;
+  --text-tertiary: #ECECEC;
+  --text-inverse: #212121;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  /* Accent Colors - Minimalista */
+  --accent-primary: #FFFFFF;
+  --accent-secondary: #E5E5E5;
+  --accent-muted: #737373;
+
+  /* Semantic Colors */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+
+  /* AI Assistant Colors */
+  --ai-bubble: #1A1A1A;
+  --user-bubble: #FFFFFF;
+  --user-bubble-text: #0A0A0A;
+
+  /* Typography */
+  line-height: 1.6;
+  font-weight: 400;
+  font-size: 15px;
+
+  color-scheme: dark;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Variables adicionales */
+  --primary-color: #4a90e2;
+  --primary-dark: #3a7bc8;
+  --success-bg: #e6f7e6;
+  --error-bg: #ffebee;
+  --bg-message: #f0f0f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Question Flow Styles */
+.question-flow {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #1a1a1a;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.question-flow form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.question-flow .question {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.question-flow label {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.question-flow input {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #333;
+  color: white;
+}
+
+.question-flow input:focus {
+  outline: none;
+  border-color: #646cff;
+}
+
+.question-flow button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  background: #646cff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.question-flow button:hover:not(:disabled) {
+  background: #535bf2;
+}
+
+.question-flow button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error and Suggestion Styles */
+.validation-error,
+.api-error {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.suggestion-box {
+  background: rgba(100, 108, 255, 0.1);
+  border: 1px solid rgba(100, 108, 255, 0.3);
+  border-radius: 4px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.suggestion-text {
+  margin: 0 0 0.75rem 0;
+  color: #a8b3ff;
+}
+
+.suggestion-text strong {
+  color: #646cff;
+}
+
+.use-suggestion-button {
+  background: #646cff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.use-suggestion-button:hover {
+  background: #535bf2;
+}
+
+.completed h3 {
+  color: #4ade80;
+  margin-bottom: 1rem;
+}
+
+.suggested-name {
+  font-size: 1.1rem;
+  color: #646cff;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+.loading {
+  color: #a8b3ff;
+}
+
+/* Upload Preview Styles - AD-4 */
+.upload-preview {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #1a1a1a;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.upload-preview h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.preview-section {
+  margin-bottom: 1.5rem;
+}
+
+.preview-section label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #a8b3ff;
+}
+
+.suggested-filename,
+.suggested-path {
+  background: #2a2a2a;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  color: #4ade80;
+  word-break: break-all;
+  margin: 0;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.confirm-button,
+.cancel-button {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.confirm-button {
+  background: #4ade80;
+  color: #1a1a1a;
+}
+
+.confirm-button:hover {
+  background: #22c55e;
+}
+
+.cancel-button {
+  background: #ef4444;
+  color: white;
+}
+
+.cancel-button:hover {
+  background: #dc2626;
+}
+
+/* Login Screen Styles - AD-5 */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+.login-container {
+  max-width: 500px;
+  width: 100%;
+  padding: 3rem;
+  background: rgba(42, 42, 42, 0.8);
+  border-radius: 16px;
+  border: 1px solid rgba(100, 108, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  text-align: center;
+}
+
+.login-container h1 {
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+.login-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.dropbox-logo {
+  margin: 1rem 0;
+}
+
+.login-message {
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  margin: 0;
+}
+
+.login-button {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: #0061FF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 97, 255, 0.3);
+}
+
+.login-button:hover {
+  background: #0052E0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 97, 255, 0.4);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-info {
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  margin: 0;
+  max-width: 350px;
+}

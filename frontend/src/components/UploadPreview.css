@@ -1,0 +1,186 @@
+/**
+ * UploadPreview Styles
+ * Diseño moderno estilo chat para vista previa de subida
+ */
+
+.upload-preview-card {
+  background: linear-gradient(135deg, #2F2F2F 0%, #2A2A2A 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: var(--space-6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  max-width: 700px;
+  margin: var(--space-4) auto;
+  animation: slide-up 300ms ease-out;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.upload-preview-card__section {
+  padding: var(--space-4) 0;
+}
+
+.upload-preview-card__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
+.upload-preview-card__icon {
+  font-size: 16px;
+}
+
+.upload-preview-card__value {
+  font-size: 16px;
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.6;
+  word-break: break-word;
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+}
+
+.upload-preview-card__divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+  margin: var(--space-4) 0;
+}
+
+.upload-preview-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.upload-preview-card__button {
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.upload-preview-card__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upload-preview-card__button--primary {
+  background: linear-gradient(135deg, #FFFFFF 0%, #E5E5E5 100%);
+  color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+}
+
+.upload-preview-card__button--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F5F5F5 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.upload-preview-card__button--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.upload-preview-card__button--secondary {
+  background: rgba(255, 180, 50, 0.15);
+  color: #FFB432;
+  border: 1px solid rgba(255, 180, 50, 0.3);
+}
+
+.upload-preview-card__button--secondary:hover:not(:disabled) {
+  background: rgba(255, 180, 50, 0.25);
+  border-color: rgba(255, 180, 50, 0.4);
+  transform: translateY(-2px);
+}
+
+.upload-preview-card__button--tertiary {
+  background: transparent;
+  color: var(--text-tertiary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.upload-preview-card__button--tertiary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: var(--text-secondary);
+}
+
+/* Small typing indicator for button */
+.typing-indicator--small {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.typing-indicator--small span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.typing-indicator--small span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-indicator--small span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .upload-preview-card {
+    padding: var(--space-5);
+    margin: var(--space-3) var(--space-2);
+  }
+
+  .upload-preview-card__value {
+    font-size: 14px;
+    padding: var(--space-3);
+  }
+
+  .upload-preview-card__button {
+    padding: var(--space-3) var(--space-4);
+    font-size: 14px;
+  }
+}
