@@ -1,1 +1,23 @@
 node_modules
+
+# Archivos de sesión
+.session
+.sessions
+*.session
+*.sessions
+.cookie
+.cookies
+*.cookie
+*.cookies
+.token
+.tokens
+*.token
+*.tokens
+.auth
+.auth.json
+auth.json
+auth_token.json
+.credentials
+credentials.json
+.dropbox_token
+dropbox_token.json
