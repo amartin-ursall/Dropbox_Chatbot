@@ -21,26 +21,7 @@ export function FilePreviewCard({ fileName, fileSize, fileType, onRemove }: File
   }
 
   const getFileIcon = (fileName: string): string => {
-    const ext = fileName.split('.').pop()?.toLowerCase()
-    switch (ext) {
-      case 'pdf':
-        return '📄'
-      case 'doc':
-      case 'docx':
-        return '📝'
-      case 'xls':
-      case 'xlsx':
-        return '📊'
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return '🖼️'
-      case 'txt':
-        return '📃'
-      default:
-        return '📁'
-    }
+    return '📄'
   }
 
   return (

@@ -44,6 +44,7 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
   const [isCompleted, setIsCompleted] = useState(false)
   const [suggestedName, setSuggestedName] = useState('')
   const [suggestedPath, setSuggestedPath] = useState('')  // AD-4
+  const [folderStructure, setFolderStructure] = useState<string[]>([])  // URSALL: carpetas a crear
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [questionHistory, setQuestionHistory] = useState<Question[]>([])  // AD-9: Track question history
   const [isGeneratingResponse, setIsGeneratingResponse] = useState(false)  // Estado para simular "generando respuesta"
@@ -54,17 +55,17 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
   // Función para generar respuesta simulada basada en la pregunta
   const generateSimulatedResponse = (question: Question, userAnswer: string): string => {
     const questionId = question.question_id
-    const questionText = question.question_text.toLowerCase()
+    const questionText = question.question_text
     
     switch (questionId) {
       case 'doc_type':
-        return `El tipo de documento sería: ${userAnswer}`
+        return `Pregunta: "${questionText}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nRespuesta: ${userAnswer}`
       case 'client':
-        return `El nombre del cliente sería: ${userAnswer}`
+        return `Pregunta: "${questionText}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nRespuesta: ${userAnswer}`
       case 'date':
-        return `La fecha del documento sería: ${userAnswer}`
+        return `Pregunta: "${questionText}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nRespuesta: ${userAnswer}`
       default:
-        return `Respuesta procesada: ${userAnswer}`
+        return `Pregunta: "${questionText}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nRespuesta: ${userAnswer}`
     }
   }
 
@@ -173,13 +174,16 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const errorData = await response.json()
         // AD-3: Handle error with suggestion
-        if (error.detail && typeof error.detail === 'object' && 'suggestion' in error.detail) {
-          setApiError(error.detail.detail)
-          setSuggestion(error.detail.suggestion)
+        if (errorData.detail && typeof errorData.detail === 'object' && 'suggestion' in errorData.detail) {
+          setApiError(errorData.detail.detail)
+          setSuggestion(errorData.detail.suggestion)
+        } else if (errorData.detail && typeof errorData.detail === 'object' && 'message' in errorData.detail) {
+          setValidationError(errorData.detail.message)
+          setSuggestion(null)
         } else {
-          setApiError(error.detail || 'Error al enviar respuesta')
+          setApiError(errorData.detail || 'Error al enviar respuesta')
           setSuggestion(null)
         }
         return
@@ -230,6 +234,7 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
       const result: SuggestedNameResponse = await response.json()
       setSuggestedName(result.suggested_name)
       setSuggestedPath(result.suggested_path || '/Documentos/Otros')  // AD-4
+      setFolderStructure(result.folder_structure || [])  // URSALL
       setIsCompleted(true)
       // Don't call onComplete yet - wait for user confirmation (AD-4)
     } catch (error) {
@@ -250,14 +255,29 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
   const handleConfirm = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`${API_BASE_URL}/api/upload-final`, {
+
+      // Usar endpoint URSALL si hay folder_structure
+      const endpoint = folderStructure.length > 0
+        ? `${API_BASE_URL}/api/ursall/upload-final`
+        : `${API_BASE_URL}/api/upload-final`
+
+      const body = folderStructure.length > 0
+        ? {
+            file_id: fileId,
+            filename: suggestedName,
+            dropbox_path: suggestedPath,
+            folder_structure: folderStructure
+          }
+        : {
+            file_id: fileId,
+            new_filename: suggestedName,
+            dropbox_path: suggestedPath
+          }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          file_id: fileId,
-          new_filename: suggestedName,
-          dropbox_path: suggestedPath
-        })
+        body: JSON.stringify(body)
       })
 
       if (!response.ok) {
@@ -446,31 +466,53 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
         )}
 
         {/* Historial de preguntas y respuestas */}
-        {questionHistory.map((q) => (
+        {questionHistory.map((q, index) => (
           <React.Fragment key={q.question_id}>
-            <MessageBubble role="assistant" content={q.question_text} />
-            {answers[q.question_id] && (
-              <MessageBubble role="user" content={answers[q.question_id]} />
-            )}
-            {simulatedResponses[q.question_id] && (
-              <MessageBubble role="assistant" content={simulatedResponses[q.question_id]} />
+            <div className="question-animation-container">
+              <MessageBubble 
+                role="assistant" 
+                content={q.question_text}
+                helpText={q.help_text}
+                examples={q.examples}
+              />
+              {answers[q.question_id] && (
+                <MessageBubble role="user" content={answers[q.question_id]} />
+              )}
+              {simulatedResponses[q.question_id] && (
+                <MessageBubble role="assistant" content={simulatedResponses[q.question_id]} />
+              )}
+            </div>
+            {/* Separador visual entre respuesta y siguiente pregunta */}
+            {index < questionHistory.length - 1 && (
+              <div className="question-separator" style={{
+                margin: '20px auto',
+                width: '80%',
+                height: '1px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+              }}></div>
             )}
           </React.Fragment>
         ))}
 
         {/* Pregunta actual */}
         {currentQuestion && (
-          <MessageBubble
-            role="assistant"
-            content={currentQuestion.question_text}
-          />
+          <div className="current-question-container">
+            <MessageBubble
+              role="assistant"
+              content={currentQuestion.question_text}
+              helpText={currentQuestion.help_text}
+              examples={currentQuestion.examples}
+            />
+          </div>
         )}
 
         {/* Errores de validación */}
         {validationError && (
           <MessageBubble
-            role="system"
-            content={`⚠️ ${validationError}`}
+            role="assistant"
+            content=""
+            error={validationError}
           />
         )}
 
@@ -562,13 +604,27 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
           <MessageBubble
             role="assistant"
             content={
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <div className="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+              <div className="loading-container">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span style={{ 
+                    color: 'var(--text-primary)', 
+                    fontWeight: 500,
+                    fontSize: '1.05rem'
+                  }}>Cargando preguntas</span>
                 </div>
-                <span style={{ color: 'var(--text-tertiary)' }}>Procesando...</span>
+                <div style={{ 
+                  fontSize: '0.9rem', 
+                  color: 'var(--text-tertiary)',
+                  textAlign: 'center',
+                  maxWidth: '280px'
+                }} className="loading-text">
+                  Preparando la siguiente pregunta para ti...
+                </div>
               </div>
             }
           />

@@ -2,7 +2,7 @@
 Question flow logic for URSALL Legal structure
 Maneja dos flujos: Procedimientos Judiciales y Proyectos Jurídicos
 """
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Any
 
 
 # Definición de flujos de preguntas para URSALL
@@ -13,7 +13,9 @@ QUESTIONS_URSALL = {
         "question_text": "¿Es un Procedimiento Judicial o un Proyecto Jurídico? (escribe: procedimiento o proyecto)",
         "required": True,
         "validation": {"type": "choice", "choices": ["procedimiento", "proyecto"]},
-        "next": "client"
+        "next": "client",
+        "help_text": "Selecciona 'procedimiento' para documentos relacionados con casos judiciales o 'proyecto' para trabajos jurídicos no judiciales.",
+        "examples": ["procedimiento", "proyecto"]
     },
 
     # Cliente (común para ambos flujos)
@@ -27,7 +29,9 @@ QUESTIONS_URSALL = {
                 "procedimiento": "jurisdiccion",
                 "proyecto": "proyecto_year"
             }
-        }
+        },
+        "help_text": "Introduce el nombre completo del cliente. Para grupos empresariales, usa el formato 'GRUPO + NOMBRE'.",
+        "examples": ["GRUPO GORETTI", "JJ. TEALQUILA Y GESTIONA SL", "Ayuntamiento Adeje"]
     },
 
     # ============= FLUJO PROCEDIMIENTO JUDICIAL =============
@@ -38,7 +42,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"type": "choice", "choices": ["contencioso", "social", "civil", "penal", "instrucción", "instruccion"]},
         "next": "juzgado_num",
-        "flow": "procedimiento"
+        "flow": "procedimiento",
+        "help_text": "Selecciona la jurisdicción del procedimiento. Esto determinará la abreviatura en la ruta (CA, SC, CIV, PEN, JPI).",
+        "examples": ["social", "contencioso administrativo", "Juzgado de lo Social"]
     },
 
     "juzgado_num": {
@@ -47,7 +53,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"type": "number"},
         "next": "demarcacion",
-        "flow": "procedimiento"
+        "flow": "procedimiento",
+        "help_text": "Introduce solo el número del juzgado, sin texto adicional.",
+        "examples": ["2", "Número 3", "Juzgado 5"]
     },
 
     "demarcacion": {
@@ -56,7 +64,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"min_length": 2},
         "next": "num_procedimiento",
-        "flow": "procedimiento"
+        "flow": "procedimiento",
+        "help_text": "Introduce la demarcación geográfica donde se encuentra el juzgado.",
+        "examples": ["Tenerife", "Santa Cruz", "La Gomera"]
     },
 
     "num_procedimiento": {
@@ -65,7 +75,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"pattern": r"^\d+/\d{4}$"},
         "next": "fecha_procedimiento",
-        "flow": "procedimiento"
+        "flow": "procedimiento",
+        "help_text": "Introduce el número de procedimiento en formato XXX/YYYY. Este dato es crucial para la estructura de carpetas.",
+        "examples": ["455/2025", "Procedimiento 123/2024", "Autos 789/2023"]
     },
 
     "fecha_procedimiento": {
@@ -73,26 +85,21 @@ QUESTIONS_URSALL = {
         "question_text": "¿Fecha del procedimiento? (formato: YYYY-MM-DD)",
         "required": True,
         "validation": {"format": "date"},
-        "next": "parte_a",
-        "flow": "procedimiento"
+        "next": "partes",
+        "flow": "procedimiento",
+        "help_text": "Introduce la fecha en formato YYYY-MM-DD. Esta fecha se usará para el nombre del archivo.",
+        "examples": ["2025-08-15", "2024-03-22"]
     },
 
-    "parte_a": {
-        "question_id": "parte_a",
-        "question_text": "¿Nombre de la parte actora/demandante? (ej: Pedro Perez, Ministerio Fiscal)",
+    "partes": {
+        "question_id": "partes",
+        "question_text": "¿Quiénes son las partes del procedimiento? (formato: Parte A vs Parte B)",
         "required": True,
-        "validation": {"min_length": 2},
-        "next": "parte_b",
-        "flow": "procedimiento"
-    },
-
-    "parte_b": {
-        "question_id": "parte_b",
-        "question_text": "¿Nombre de la parte demandada? (ej: Cabildo Gomera, Motor 7 Islas)",
-        "required": True,
-        "validation": {"min_length": 2},
+        "validation": {"min_length": 5},
         "next": "materia_proc",
-        "flow": "procedimiento"
+        "flow": "procedimiento",
+        "help_text": "Introduce las partes separadas por 'vs', 'contra', o similar. El sistema extraerá automáticamente parte_a y parte_b.",
+        "examples": ["Pedro Perez vs Cabildo Gomera", "Ministerio Fiscal contra Juan García", "Actor: Empresa XYZ / Demandado: Ayuntamiento"]
     },
 
     "materia_proc": {
@@ -101,7 +108,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"min_length": 2},
         "next": "doc_type_proc",
-        "flow": "procedimiento"
+        "flow": "procedimiento",
+        "help_text": "Introduce la materia o asunto principal del procedimiento. Será parte del nombre de la carpeta.",
+        "examples": ["Despidos", "Fijeza", "Urbanismo", "Art316CP"]
     },
 
     "doc_type_proc": {
@@ -110,7 +119,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"min_length": 2},
         "next": None,  # Última pregunta del flujo procedimiento
-        "flow": "procedimiento"
+        "flow": "procedimiento",
+        "help_text": "El tipo de documento determinará la subcarpeta donde se guardará. Consulta la tabla de mapeo en la documentación.",
+        "examples": ["Sentencia", "Escrito de demanda", "Informe pericial", "Notificación del juzgado"]
     },
 
     # ============= FLUJO PROYECTO JURÍDICO =============
@@ -121,7 +132,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"pattern": r"^\d{4}$"},
         "next": "proyecto_month",
-        "flow": "proyecto"
+        "flow": "proyecto",
+        "help_text": "Introduce el año del proyecto en formato de 4 dígitos (YYYY).",
+        "examples": ["2025", "2024"]
     },
 
     "proyecto_month": {
@@ -130,7 +143,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"pattern": r"^(0[1-9]|1[0-2])$"},
         "next": "proyecto_nombre",
-        "flow": "proyecto"
+        "flow": "proyecto",
+        "help_text": "Introduce el mes en formato de 2 dígitos (MM). Usa 01 para enero, 06 para junio, etc.",
+        "examples": ["01", "06", "12"]
     },
 
     "proyecto_nombre": {
@@ -139,7 +154,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"min_length": 2},
         "next": "proyecto_materia",
-        "flow": "proyecto"
+        "flow": "proyecto",
+        "help_text": "Introduce un nombre descriptivo y conciso para el proyecto.",
+        "examples": ["Informe", "Dictamen", "Estudio", "Consulta"]
     },
 
     "proyecto_materia": {
@@ -148,7 +165,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"min_length": 2},
         "next": "doc_type_proyecto",
-        "flow": "proyecto"
+        "flow": "proyecto",
+        "help_text": "Introduce la materia o asunto principal del proyecto. Será parte del nombre de la carpeta.",
+        "examples": ["Seguro Salud", "Urbanismo", "Laboral", "Contratación Pública"]
     },
 
     "doc_type_proyecto": {
@@ -157,7 +176,9 @@ QUESTIONS_URSALL = {
         "required": True,
         "validation": {"min_length": 2},
         "next": None,  # Última pregunta del flujo proyecto
-        "flow": "proyecto"
+        "flow": "proyecto",
+        "help_text": "El tipo de documento determinará la subcarpeta donde se guardará. Consulta la tabla de mapeo en la documentación.",
+        "examples": ["Informe", "Borrador", "Contrato", "Comunicación"]
     },
 }
 

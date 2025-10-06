@@ -13,9 +13,12 @@ interface MessageBubbleProps {
   role: MessageRole
   content: React.ReactNode
   timestamp?: string
+  helpText?: string
+  examples?: string[]
+  error?: string
 }
 
-export function MessageBubble({ role, content, timestamp }: MessageBubbleProps) {
+export function MessageBubble({ role, content, timestamp, helpText, examples, error }: MessageBubbleProps) {
   const { userInfo } = useUser()
 
   return (
@@ -37,6 +40,24 @@ export function MessageBubble({ role, content, timestamp }: MessageBubbleProps) 
       )}
       <div className="message-bubble__content">
         {content}
+        
+        {error && (
+          <div className="message-bubble__error">
+            <p>{error}</p>
+          </div>
+        )}
+        
+        {helpText && role === 'assistant' && (
+          <div className="message-bubble__help-text">
+            <p><i>{helpText}</i></p>
+          </div>
+        )}
+        
+        {examples && examples.length > 0 && role === 'assistant' && (
+          <div className="message-bubble__examples">
+            <p><strong>Ejemplos:</strong> {examples.join(', ')}</p>
+          </div>
+        )}
       </div>
       {timestamp && (
         <div className="message-bubble__timestamp">{timestamp}</div>

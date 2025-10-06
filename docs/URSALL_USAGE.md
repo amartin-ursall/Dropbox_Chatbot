@@ -16,6 +16,21 @@ Cada cliente contiene dos subcarpetas principales:
 1. **Procedimientos Judiciales**
 2. **Proyectos Jurídicos**
 
+## Flujo de Preguntas
+
+El sistema guía al usuario a través de un flujo de preguntas para determinar la ruta correcta del archivo. Cada pregunta incluye texto de ayuda y ejemplos para facilitar la entrada de datos correcta.
+
+### Mejoras en el Flujo de Preguntas
+
+1. **Campo Unificado de Partes**: Ahora se solicitan ambas partes (demandante y demandado) en una sola pregunta, facilitando la entrada de datos en formato "Parte A vs Parte B".
+
+2. **Ayuda Contextual**: Cada pregunta incluye texto de ayuda y ejemplos para guiar al usuario.
+
+3. **Extracción Inteligente**: El sistema extrae automáticamente la parte demandante y demandada del texto ingresado, reconociendo formatos como:
+   - "Pedro Pérez vs Cabildo Gomera"
+   - "Actor: Juan López / Demandado: Motor 7 Islas"
+   - "Parte A: Empresa XYZ, Parte B: Ayuntamiento"
+
 ---
 
 ## 1. Procedimientos Judiciales

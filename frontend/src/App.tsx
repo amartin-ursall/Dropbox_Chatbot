@@ -111,12 +111,34 @@ function App() {
       <AppShell header={<ChatHeader title="🗂️ Dropbox Chatbot Organizer" />}>
         <div style={{
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
           height: '100%',
           color: 'var(--text-secondary)'
         }}>
-          <p>Verificando autenticación...</p>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 'var(--space-2)',
+            marginBottom: 'var(--space-3)'
+          }}>
+            <div className="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              fontWeight: 500,
+              margin: 0
+            }}>Verificando estado de autenticación</p>
+          </div>
+          <p style={{ 
+            fontSize: '0.9rem', 
+            opacity: 0.8,
+            animation: 'pulse 1.5s infinite ease-in-out'
+          }}>Conectando con el servidor...</p>
         </div>
       </AppShell>
     )
@@ -135,8 +157,7 @@ function App() {
         <AppShell
           header={
             <ChatHeader
-              title="Dropbox AI Organizer"
-              subtitle="Organizador inteligente de archivos"
+              title="Dropbox Chatbot Organizer"
               showUserInfo={true}
             />
           }

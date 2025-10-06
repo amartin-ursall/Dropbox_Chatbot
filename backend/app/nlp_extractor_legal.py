@@ -38,9 +38,9 @@ NUM_PROCEDIMIENTO_PATTERNS = [
 
 # Patrones para partes (actor vs demandado)
 PARTES_PATTERNS = [
-    r'([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.]+)\s+(?:vs\.?|contra|c\/)\s+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.]+)',
-    r'(?:actor|demandante)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.]+)',
-    r'(?:demandado|demandada)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.]+)',
+    r'([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.]+)\s+(?:vs\.?|contra|c\/|\/)\s+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.]+)',
+    r'(?:actor|demandante|parte\s+a)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.]+)',
+    r'(?:demandado|demandada|parte\s+b)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.]+)',
 ]
 
 # Patrones para materia
@@ -156,25 +156,37 @@ def extract_partes(user_input: str) -> Dict[str, Optional[str]]:
     Ejemplos:
     - "Pedro Perez vs Cabildo Gomera" → {"parte_a": "Pedro Perez", "parte_b": "Cabildo Gomera"}
     - "Actor: Juan López, Demandado: Motor 7 Islas" → {"parte_a": "Juan López", "parte_b": "Motor 7 Islas"}
+    - "Parte A: Empresa XYZ / Parte B: Ayuntamiento" → {"parte_a": "Empresa XYZ", "parte_b": "Ayuntamiento"}
     """
     result = {"parte_a": None, "parte_b": None}
 
-    # Patrón "A vs B"
-    match = re.search(r'([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.&,]+)\s+(?:vs\.?|contra|c\/)\s+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.&,]+)', user_input, re.IGNORECASE)
+    # Si el input está vacío o no es válido, devolver None para ambos campos
+    if not user_input or len(user_input.strip()) < 3:
+        return result
+
+    # Patrón "A vs B" o "A / B"
+    match = re.search(r'([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.&,]+)\s+(?:vs\.?|contra|c\/|\/)\s+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.&,]+)', user_input, re.IGNORECASE)
     if match:
         result["parte_a"] = match.group(1).strip()
         result["parte_b"] = match.group(2).strip()
         return result
 
-    # Buscar actor/demandante
-    actor_match = re.search(r'(?:actor|demandante)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.&,]+?)(?:\s*,|\s*y|\s*$)', user_input, re.IGNORECASE)
+    # Buscar actor/demandante/parte_a
+    actor_match = re.search(r'(?:actor|demandante|parte\s+a)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.&,]+?)(?:\s*,|\s*y|\s*$|\s*\/)', user_input, re.IGNORECASE)
     if actor_match:
         result["parte_a"] = actor_match.group(1).strip()
 
-    # Buscar demandado
-    demandado_match = re.search(r'(?:demandado|demandada)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.&,]+?)(?:\s*,|\s*y|\s*$)', user_input, re.IGNORECASE)
+    # Buscar demandado/parte_b
+    demandado_match = re.search(r'(?:demandado|demandada|parte\s+b)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ\s\.&,]+?)(?:\s*,|\s*y|\s*$)', user_input, re.IGNORECASE)
     if demandado_match:
         result["parte_b"] = demandado_match.group(1).strip()
+
+    # Si no se pudo extraer alguna de las partes, asignar valores por defecto
+    if not result["parte_a"]:
+        result["parte_a"] = "Parte Actora"
+    
+    if not result["parte_b"]:
+        result["parte_b"] = "Parte Demandada"
 
     return result
 

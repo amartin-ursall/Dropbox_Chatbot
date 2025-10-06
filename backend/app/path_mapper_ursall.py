@@ -133,17 +133,30 @@ def build_procedimiento_name(
     Formato: AAAA_MM_Juzgado_Demarcación_NºProcedimiento/AAAA_ParteA Vs ParteB_Materia
 
     Ejemplo: 2025_08_SC2_Tenerife_455/2025_Pedro Perez Vs Cabildo Gomera_Despidos
+
+    Args:
+        num_procedimiento: Número en formato "455/2025" - se extrae solo el número
     """
     # Obtener abreviatura de jurisdicción
     juris_abbr = JURISDICTION_MAP.get(jurisdiccion.lower(), jurisdiccion.upper()[:3])
 
-    # Construir primera parte
-    primera_parte = f"{year}_{month}_{juris_abbr}{juzgado_num}_{demarcacion}_{num_procedimiento}/{year_proc}"
+    # Sanitizar nombres de partes
+    parte_a_clean = sanitize_filename_part(parte_a)
+    parte_b_clean = sanitize_filename_part(parte_b)
+    materia_clean = sanitize_filename_part(materia)
+    demarcacion_clean = sanitize_filename_part(demarcacion)
 
-    # Construir segunda parte
-    segunda_parte = f"{parte_a} Vs {parte_b}_{materia}"
+    # Extraer solo el número del procedimiento (antes de la barra)
+    # Entrada: "455/2025" -> Salida: "455"
+    solo_numero = num_procedimiento.split('/')[0] if '/' in num_procedimiento else num_procedimiento
 
-    return f"{primera_parte}_{segunda_parte}"
+    # Construir primera parte: AAAA_MM_Juzgado_Demarcación_NºProcedimiento
+    primera_parte = f"{year}_{month}_{juris_abbr}{juzgado_num}_{demarcacion_clean}_{solo_numero}"
+
+    # Construir segunda parte: AAAA_ParteA Vs ParteB_Materia
+    segunda_parte = f"{year_proc}_{parte_a_clean} Vs {parte_b_clean}_{materia_clean}"
+
+    return f"{primera_parte}/{segunda_parte}"
 
 
 def build_proyecto_name(

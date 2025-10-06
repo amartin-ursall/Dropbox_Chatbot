@@ -131,10 +131,12 @@ async def upload_file_to_dropbox(
             file_content = f.read()
 
         # Prepare Dropbox API arguments
+        # Modo "add" con autorename para evitar sobrescribir archivos existentes
+        # Si el archivo existe, Dropbox agregará automáticamente un sufijo (ej: "archivo (1).pdf")
         dropbox_api_arg = json.dumps({
             "path": full_dropbox_path,
-            "mode": "overwrite",
-            "autorename": False,
+            "mode": "add",
+            "autorename": True,
             "mute": False
         })
 
@@ -160,14 +162,23 @@ async def upload_file_to_dropbox(
                 )
 
             result = response.json()
-            logger.info(f"File uploaded successfully: {result.get('path_display')}")
+            uploaded_path = result.get('path_display')
+            uploaded_name = result.get('name')
+
+            # Verificar si el archivo fue renombrado automáticamente
+            if uploaded_name != new_filename:
+                logger.warning(f"Archivo renombrado automáticamente: {new_filename} -> {uploaded_name}")
+                logger.info(f"El archivo ya existía, se creó una nueva versión")
+
+            logger.info(f"File uploaded successfully: {uploaded_path}")
 
             return {
                 "success": True,
-                "path": result.get("path_display"),
-                "name": result.get("name"),
+                "path": uploaded_path,
+                "name": uploaded_name,
                 "id": result.get("id"),
-                "size": result.get("size")
+                "size": result.get("size"),
+                "was_renamed": uploaded_name != new_filename
             }
 
     except FileNotFoundError:

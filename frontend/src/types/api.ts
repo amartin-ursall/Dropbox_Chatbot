@@ -29,6 +29,8 @@ export interface Question {
     format?: string
     only_letters?: boolean  // AD-3
   }
+  help_text?: string
+  examples?: string[]
 }
 
 export interface AnswerResponse {
@@ -38,7 +40,10 @@ export interface AnswerResponse {
 
 export interface SuggestedNameResponse {
   suggested_name: string
-  original_extension: string
+  original_extension?: string
   suggested_path?: string  // AD-4
   full_path?: string       // AD-4
+  folder_structure?: string[]  // URSALL: Lista de carpetas a crear
+  tipo?: string  // URSALL: procedimiento o proyecto
+  subfolder?: string  // URSALL: Subcarpeta específica
 }
