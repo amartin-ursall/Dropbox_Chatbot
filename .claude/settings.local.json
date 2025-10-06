@@ -37,7 +37,9 @@
       "Bash(timeout:*)",
       "Bash(tasklist)",
       "Bash(netstat:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(python3 -m pytest backend/tests/test_nlp_extractor.py -v)",
+      "Bash(where python)"
     ],
     "deny": [],
     "ask": []

@@ -1,114 +1,46 @@
 /**
  * UserInfo Component
- * Muestra información del usuario de Dropbox
+ * Muestra información del usuario de Dropbox usando UserContext
  */
-import React, { useState, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
+import { useUser } from '../contexts/UserContext'
 import './UserInfo.css'
 
-interface DropboxAccountInfo {
-  name: string
-  email: string
-  used_space: number
-  allocated_space: number
-  account_type: string
-  profile_photo_url?: string
-}
-
-interface CachedUserInfo {
-  data: DropboxAccountInfo
-  timestamp: number
-}
-
 const API_BASE_URL = 'http://localhost:8000'
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos en milisegundos
-const CACHE_KEY = 'dropbox_user_info_cache'
 
 export function UserInfo() {
-  const [userInfo, setUserInfo] = useState<DropboxAccountInfo | null>(null)
+  const { userInfo, isLoading, authError, refreshUserInfo } = useUser()
   const [isOpen, setIsOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [authError, setAuthError] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
+  const panelRef = useRef<HTMLDivElement>(null)
 
-  // Cargar datos del caché al montar el componente
+  const closeWithAnimation = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setIsOpen(false)
+      setIsClosing(false)
+    }, 200) // Duración de la animación
+  }
+
+  // Cerrar el panel al hacer clic fuera
   useEffect(() => {
-    const cachedData = localStorage.getItem(CACHE_KEY)
-    if (cachedData) {
-      try {
-        const cached: CachedUserInfo = JSON.parse(cachedData)
-        const now = Date.now()
-
-        // Si el caché es válido, cargar los datos
-        if (now - cached.timestamp < CACHE_DURATION) {
-          setUserInfo(cached.data)
-        }
-      } catch (error) {
-        console.error('Error loading cache:', error)
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node) && isOpen && !isClosing) {
+        closeWithAnimation()
       }
     }
-  }, [])
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchUserInfo()
+    if (isOpen && !isClosing) {
+      document.addEventListener('mousedown', handleClickOutside)
     }
-  }, [isOpen])
 
-  const fetchUserInfo = async () => {
-    try {
-      setIsLoading(true)
-      setAuthError(false)
-
-      // Intentar cargar desde caché primero
-      const cachedData = localStorage.getItem(CACHE_KEY)
-      if (cachedData) {
-        const cached: CachedUserInfo = JSON.parse(cachedData)
-        const now = Date.now()
-
-        // Si el caché es válido (menos de 5 minutos), usarlo
-        if (now - cached.timestamp < CACHE_DURATION) {
-          console.log('Usando datos del caché')
-          setUserInfo(cached.data)
-          setIsLoading(false)
-          return
-        }
-      }
-
-      console.log('Iniciando petición a /api/user/info')
-      const response = await fetch(`${API_BASE_URL}/api/user/info`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        }
-      })
-
-      console.log('Respuesta recibida:', response.status, response.statusText)
-
-      if (response.status === 200) {
-        const data = await response.json()
-        console.log('Datos reales recibidos:', data)
-        setUserInfo(data)
-
-        // Guardar en caché
-        const cacheData: CachedUserInfo = {
-          data,
-          timestamp: Date.now()
-        }
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
-      } else if (response.status === 401) {
-        setAuthError(true)
-      } else {
-        console.error(`Error fetching user info: ${response.status} - ${response.statusText}`)
-      }
-    } catch (error) {
-      console.error('Error en la petición:', error)
-      setAuthError(true)
-    } finally {
-      setIsLoading(false)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
     }
+  }, [isOpen, isClosing])
+
+  const handleRefresh = () => {
+    refreshUserInfo()
   }
   
   const handleDropboxLogin = () => {
@@ -135,10 +67,16 @@ export function UserInfo() {
   }
 
   return (
-    <div className="user-info">
+    <div className="user-info" ref={panelRef}>
       <button
         className="user-info__trigger"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (isOpen && !isClosing) {
+            closeWithAnimation()
+          } else if (!isOpen && !isClosing) {
+            setIsOpen(true)
+          }
+        }}
         aria-label="Información del usuario"
       >
         <div className="user-info__avatar">
@@ -154,9 +92,9 @@ export function UserInfo() {
         </div>
       </button>
 
-      {isOpen && (
+      {(isOpen || isClosing) && (
         <>
-          <div className="user-info__panel">
+          <div className={`user-info__panel ${isClosing ? 'user-info__panel--closing' : ''}`}>
             {isLoading ? (
               <div className="user-info__loading">
                 <div className="typing-indicator">
@@ -232,8 +170,6 @@ export function UserInfo() {
                     onClick={async () => {
                       try {
                         await fetch('http://localhost:8000/auth/logout', { method: 'POST' })
-                        // Limpiar caché al cerrar sesión
-                        localStorage.removeItem(CACHE_KEY)
                         window.location.reload()
                       } catch (error) {
                         console.error('Error logging out:', error)
@@ -253,7 +189,7 @@ export function UserInfo() {
             ) : (
               <div className="user-info__error">
                 <p>Error al cargar información del usuario</p>
-                <button onClick={fetchUserInfo}>Reintentar</button>
+                <button onClick={handleRefresh}>Reintentar</button>
               </div>
             )}
           </div>

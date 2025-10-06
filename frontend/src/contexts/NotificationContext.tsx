@@ -37,18 +37,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const id = Math.random().toString(36).substr(2, 9)
     const newNotification: Notification = {
       id,
-      duration: 5000,
+      duration: undefined, // Eliminamos la duración por defecto para hacer las notificaciones persistentes
       ...notification
     }
 
     setNotifications(prev => [...prev, newNotification])
 
-    // Auto-remove after duration
-    if (newNotification.duration) {
-      setTimeout(() => {
-        removeNotification(id)
-      }, newNotification.duration)
-    }
+    // Las notificaciones ahora son persistentes y solo se eliminan manualmente
+    // No hay auto-eliminación automática
   }, [removeNotification])
 
   const showSuccess = useCallback((title: string, message?: string) => {

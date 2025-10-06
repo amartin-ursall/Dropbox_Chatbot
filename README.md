@@ -13,7 +13,13 @@ Este proyecto permite a los usuarios interactuar con un chatbot que les guía en
 - **Sugerencias inteligentes**: Nombres de archivo y rutas sugeridas automáticamente
 - **Validación avanzada**: Validación de fechas, tipos de documento y clientes con sugerencias en caso de error
 - **Información de usuario**: Panel de información con datos de la cuenta de Dropbox en tiempo real con caché inteligente
+- **Sistema de notificaciones**: Notificaciones persistentes con gestión avanzada y animaciones
 - **Interfaz moderna**: UI responsive con diseño oscuro y animaciones fluidas
+- **Experiencia de usuario mejorada**: 
+  - Notificaciones persistentes que no desaparecen automáticamente
+  - Cierre con animación suave al hacer clic fuera de los componentes
+  - Paneles de usuario e información con animaciones de entrada y salida
+  - Gestión inteligente de estados de carga y error
 
 ## Tecnologías utilizadas
 
@@ -117,6 +123,18 @@ El frontend estará disponible en `http://localhost:5173`
 - Los datos del usuario se cachean durante 5 minutos
 - Carga instantánea desde localStorage
 - Actualización automática cuando expira el caché
+
+### Sistema de notificaciones mejorado
+- **Notificaciones persistentes**: No desaparecen automáticamente, requieren acción del usuario
+- **Gestión inteligente**: Click fuera del panel para cerrar con animación suave
+- **Animaciones fluidas**: Transiciones de entrada y salida con CSS animations
+- **Estados optimizados**: Prevención de múltiples activaciones durante animaciones
+
+### Experiencia de usuario (UX/UI)
+- **Paneles interactivos**: UserInfo y Notificaciones con comportamiento consistente
+- **Animaciones sincronizadas**: Misma duración y curva de easing en todos los componentes
+- **Click-outside functionality**: Cierre intuitivo al hacer clic fuera de los paneles
+- **Estados de carga**: Indicadores visuales durante operaciones asíncronas
 
 ### Validación inteligente
 - Sugerencias automáticas para tipos de documento comunes

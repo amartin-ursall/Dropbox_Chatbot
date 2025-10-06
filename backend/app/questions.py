@@ -23,9 +23,9 @@ QUESTIONS = {
     },
     "date": {
         "question_id": "date",
-        "question_text": "¿Cuál es la fecha del documento? (formato: YYYY-MM-DD)",
+        "question_text": "¿Cuál es la fecha del documento?",
         "required": True,
-        "validation": {"format": "YYYY-MM-DD"},
+        "validation": {"format": "flexible"},
         "next": None  # Last question
     }
 }

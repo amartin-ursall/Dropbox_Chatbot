@@ -46,7 +46,27 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
   const [suggestedPath, setSuggestedPath] = useState('')  // AD-4
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [questionHistory, setQuestionHistory] = useState<Question[]>([])  // AD-9: Track question history
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false)  // Estado para simular "generando respuesta"
+  const [simulatedResponse, setSimulatedResponse] = useState<string>('')  // Respuesta simulada durante el delay
+  const [simulatedResponses, setSimulatedResponses] = useState<Record<string, string>>({})  // Respuestas simuladas guardadas
   const { showSuccess, showError } = useNotifications()
+
+  // Función para generar respuesta simulada basada en la pregunta
+  const generateSimulatedResponse = (question: Question, userAnswer: string): string => {
+    const questionId = question.question_id
+    const questionText = question.question_text.toLowerCase()
+    
+    switch (questionId) {
+      case 'doc_type':
+        return `El tipo de documento sería: ${userAnswer}`
+      case 'client':
+        return `El nombre del cliente sería: ${userAnswer}`
+      case 'date':
+        return `La fecha del documento sería: ${userAnswer}`
+      default:
+        return `Respuesta procesada: ${userAnswer}`
+    }
+  }
 
   // Start question flow when file is uploaded
   useEffect(() => {
@@ -109,6 +129,38 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
       setIsLoading(true)
       setValidationError('')
 
+      // Mostrar inmediatamente la respuesta del usuario
+      const newAnswers = {
+        ...answers,
+        [currentQuestion.question_id]: userAnswer.trim()
+      }
+      setAnswers(newAnswers)
+      setAnswer('')
+
+      // Añadir la pregunta actual al historial
+      setQuestionHistory(prev => [...prev, currentQuestion])
+
+      // Generar respuesta simulada y activar estado de "generando respuesta"
+      const simResponse = generateSimulatedResponse(currentQuestion, userAnswer.trim())
+      setSimulatedResponse(simResponse)
+      setIsGeneratingResponse(true)
+      
+      // Esperar 1000ms para simular procesamiento
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Guardar la respuesta simulada permanentemente en el historial
+      setSimulatedResponses(prev => ({
+        ...prev,
+        [currentQuestion.question_id]: simResponse
+      }))
+      
+      // Limpiar el estado temporal y esperar un poco más antes de continuar
+      setIsGeneratingResponse(false)
+      setSimulatedResponse('')
+      
+      // Esperar un poco más antes de procesar la siguiente pregunta
+      await new Promise(resolve => setTimeout(resolve, 800))
+
       // Submit answer
       const response = await fetch(`${API_BASE_URL}/api/questions/answer`, {
         method: 'POST',
@@ -139,20 +191,10 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
 
       const apiResult: AnswerResponse = await response.json()
 
-      // Store answer
-      const newAnswers = {
-        ...answers,
-        [currentQuestion.question_id]: userAnswer.trim()
-      }
-      setAnswers(newAnswers)
-      setAnswer('')
-
       if (apiResult.completed) {
         // Generate filename
         await generateFilename(newAnswers)
       } else if (apiResult.next_question) {
-        // AD-9: Add current question to history before moving to next
-        setQuestionHistory(prev => [...prev, currentQuestion])
         // Move to next question
         setCurrentQuestion(apiResult.next_question)
       }
@@ -160,6 +202,7 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
       setApiError('Error de conexión')
     } finally {
       setIsLoading(false)
+      // No limpiar isGeneratingResponse ni simulatedResponse aquí ya que se manejan manualmente
     }
   }
 
@@ -409,6 +452,9 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
             {answers[q.question_id] && (
               <MessageBubble role="user" content={answers[q.question_id]} />
             )}
+            {simulatedResponses[q.question_id] && (
+              <MessageBubble role="assistant" content={simulatedResponses[q.question_id]} />
+            )}
           </React.Fragment>
         ))}
 
@@ -486,8 +532,33 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
           </div>
         )}
 
-        {/* Indicador de carga */}
-        {isLoading && (
+        {/* Indicador de generando respuesta con respuesta simulada */}
+        {isGeneratingResponse && (
+          <>
+            <MessageBubble
+              role="assistant"
+              content={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span style={{ color: 'var(--text-tertiary)' }}>Generando respuesta...</span>
+                </div>
+              }
+            />
+            {simulatedResponse && (
+              <MessageBubble
+                role="assistant"
+                content={simulatedResponse}
+              />
+            )}
+          </>
+        )}
+
+        {/* Indicador de carga para otras operaciones */}
+        {isLoading && !isGeneratingResponse && (
           <MessageBubble
             role="assistant"
             content={
@@ -548,7 +619,7 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
         <Composer
           onSubmit={handleSubmit}
           placeholder={currentQuestion.required ? 'Escribe tu respuesta...' : 'Escribe tu respuesta (opcional)...'}
-          disabled={isLoading}
+          disabled={isLoading || isGeneratingResponse}
         />
       )}
     </>

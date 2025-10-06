@@ -93,6 +93,21 @@
   }
 }
 
+@keyframes slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.user-info__panel--closing {
+  animation: slide-out 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 .user-info__loading,
 .user-info__auth-error {
   display: flex;

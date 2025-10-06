@@ -109,12 +109,33 @@ Panel de información del usuario:
 - Foto de perfil
 - Botón de cerrar sesión
 - **Sistema de caché inteligente (5 minutos)**
+- **Animaciones fluidas de apertura y cierre**
 
 **Características del caché:**
 - Almacenamiento en `localStorage`
 - Carga instantánea desde caché
 - Actualización automática al abrir el panel
 - Limpieza automática al cerrar sesión
+
+**Características de animación:**
+- Animación de deslizamiento suave al abrir/cerrar
+- Detección de clics fuera del panel
+- Transiciones CSS optimizadas (200ms)
+- Estado de cierre controlado para evitar parpadeos
+
+### `components/NotificationIcon.tsx`
+Sistema de notificaciones avanzado:
+- Icono con badge de contador
+- Dropdown con lista de notificaciones
+- Gestión de notificaciones persistentes
+- **Animaciones fluidas de apertura y cierre**
+- Funcionalidad de eliminar notificaciones individuales
+
+**Características de animación:**
+- Animación de deslizamiento desde arriba
+- Detección de clics fuera del dropdown
+- Transiciones CSS sincronizadas
+- Estados de carga y cierre optimizados
 
 ### `contexts/UserContext.tsx`
 Contexto de React para compartir información del usuario:
@@ -123,6 +144,58 @@ Contexto de React para compartir información del usuario:
 - Funciones de login/logout
 
 ## Características principales
+
+### Sistema de notificaciones
+
+La aplicación incluye un sistema de notificaciones completo:
+
+```typescript
+// Gestión de notificaciones persistentes
+const [notifications, setNotifications] = useState<Notification[]>([])
+
+// Animaciones fluidas
+const [isOpen, setIsOpen] = useState(false)
+const [isClosing, setIsClosing] = useState(false)
+
+// Función de cierre con animación
+const closeWithAnimation = () => {
+  setIsClosing(true)
+  setTimeout(() => {
+    setIsOpen(false)
+    setIsClosing(false)
+  }, 200) // Duración de la animación
+}
+```
+
+### Animaciones de UI
+
+Todos los paneles incluyen animaciones suaves:
+
+```css
+/* Animación de apertura */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animación de cierre */
+@keyframes slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+```
 
 ### Sistema de caché
 

@@ -28,12 +28,15 @@ from app.validators import (
     generate_doc_type_suggestion,
     generate_date_suggestion
 )
+from app.nlp_extractor import extract_information
+from app.gemini_rest_extractor import extract_information_ai, check_gemini_status
 from app.questions import (
     get_first_question,
     get_next_question,
     is_last_question
 )
-from app.path_mapper import suggest_path, get_full_path
+from app.path_mapper import suggest_path, get_full_path, suggest_path_intelligent
+from app.dropbox_helper import get_existing_structure
 from app import auth
 from app.dropbox_uploader import upload_file_to_dropbox
 from fastapi.responses import RedirectResponse
@@ -148,7 +151,11 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "ok"}
+    gemini_status = check_gemini_status()
+    return {
+        "status": "ok",
+        "ai": gemini_status
+    }
 
 
 # AD-5: OAuth2 authentication endpoints
@@ -228,7 +235,8 @@ async def start_questions(payload: QuestionStart) -> Dict:
     # Initialize session
     question_sessions[file_id] = {
         "current_question": "doc_type",
-        "answers": {}
+        "answers": {},
+        "extracted_answers": {}
     }
 
     return get_first_question()
@@ -242,19 +250,52 @@ async def answer_question(payload: QuestionAnswer) -> Dict:
     AD-2: Validates answer and returns next question or completion
     AD-3: Uses advanced validation with suggestions
     Refactored to use questions module
+    Updated: Uses NLP extraction to intelligently extract key information
     """
     file_id = payload.file_id
     question_id = payload.question_id
     answer = payload.answer
 
-    # AD-3: Validate with advanced validators and generate suggestions on error
+    # STEP 1: Extract key information from user response using AI
+    logger.info(f"Original answer: {answer}")
+    try:
+        extracted_answer = await extract_information_ai(question_id, answer)
+        logger.info(f"Extracted answer: {extracted_answer}")
+
+        # Check for ambiguity
+        if extracted_answer == "AMBIGUO":
+            # Generate helpful clarification message based on question type
+            clarification_messages = {
+                "client": "No pude identificar claramente el nombre del cliente. Por favor, proporciona el nombre completo (ej: 'Juan Pérez' o 'Acme Corp S.L.')",
+                "doc_type": "No pude identificar el tipo de documento. Por favor, especifica el tipo (ej: 'factura', 'contrato', 'recibo', 'nómina')",
+                "date": "No pude identificar una fecha válida. Por favor, usa un formato claro (ej: '15/01/2025' o '2025-01-15')"
+            }
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "AMBIGUOUS_RESPONSE",
+                    "message": clarification_messages.get(question_id, "Respuesta ambigua, por favor proporciona más información"),
+                    "suggestion": "Sé más específico en tu respuesta"
+                }
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"AI extraction error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al procesar la respuesta: {str(e)}"
+        )
+
+    # STEP 2: Validate with advanced validators and generate suggestions on error
     try:
         if question_id == "doc_type":
-            validated_answer = validate_doc_type_advanced(answer)
+            validated_answer = validate_doc_type_advanced(extracted_answer)
         elif question_id == "client":
-            validated_answer = validate_client_advanced(answer)
+            validated_answer = validate_client_advanced(extracted_answer)
         elif question_id == "date":
-            validated_answer, warning = validate_date_advanced(answer)
+            validated_answer, warning = validate_date_advanced(extracted_answer)
             # Note: warning stored but not returned in this endpoint
             # Could be added to response if needed
         else:
@@ -263,9 +304,9 @@ async def answer_question(payload: QuestionAnswer) -> Dict:
         # AD-3: Generate suggestion for common mistakes
         suggestion = None
         if question_id == "doc_type":
-            suggestion = generate_doc_type_suggestion(answer)
+            suggestion = generate_doc_type_suggestion(extracted_answer)
         elif question_id == "date":
-            suggestion = generate_date_suggestion(answer)
+            suggestion = generate_date_suggestion(extracted_answer)
 
         # Return error with optional suggestion
         raise HTTPException(
@@ -276,10 +317,16 @@ async def answer_question(payload: QuestionAnswer) -> Dict:
             } if suggestion else e.message
         )
 
-    # Store answer
+    # Store answer (both extracted and validated)
     if file_id not in question_sessions:
-        question_sessions[file_id] = {"answers": {}}
+        question_sessions[file_id] = {"answers": {}, "extracted_answers": {}}
+
+    # Ensure extracted_answers key exists (for existing sessions)
+    if "extracted_answers" not in question_sessions[file_id]:
+        question_sessions[file_id]["extracted_answers"] = {}
+
     question_sessions[file_id]["answers"][question_id] = validated_answer
+    question_sessions[file_id]["extracted_answers"][question_id] = extracted_answer
 
     # Get next question using refactored logic
     next_q = get_next_question(question_id)
@@ -287,23 +334,25 @@ async def answer_question(payload: QuestionAnswer) -> Dict:
 
     return {
         "next_question": next_q,
-        "completed": completed
+        "completed": completed,
+        "extracted_value": extracted_answer,  # Lo que Gemini extrajo
+        "validated_value": validated_answer   # Lo que pasó la validación
     }
 
 
 @app.post("/api/suggest-path")
 async def suggest_dropbox_path(payload: SuggestPath) -> Dict:
     """
-    Suggest Dropbox path based on document type
+    Suggest Dropbox path based on document type with intelligent organization
 
-    AD-4: New endpoint for path suggestion
+    AD-4: Enhanced path suggestion with year/client subfolders
     """
     doc_type = payload.doc_type
     client = payload.client
     date = payload.date
 
-    # Suggest path based on doc type
-    suggested_path = suggest_path(doc_type)
+    # Suggest path with intelligent sub-organization
+    suggested_path = suggest_path(doc_type, client=client, date=date)
 
     # Generate suggested name (for convenience)
     sanitized_type = sanitize_filename_part(doc_type)
@@ -316,25 +365,35 @@ async def suggest_dropbox_path(payload: SuggestPath) -> Dict:
     return {
         "suggested_path": suggested_path,
         "suggested_name": suggested_name,
-        "full_path": full_path
+        "full_path": full_path,
+        "organization": {
+            "by_year": date.split('-')[0] if date else None,
+            "by_client": sanitize_filename_part(client) if client else None
+        }
     }
 
 
 @app.post("/api/questions/generate-name")
 async def generate_filename(payload: GenerateName) -> Dict:
     """
-    Generate suggested filename from answers
+    Generate suggested filename and intelligent path based on Dropbox structure
 
     AD-2: Format {fecha}_{tipo}_{cliente}.{ext}
-    AD-4: Include suggested_path and full_path
+    AD-4: Enhanced path with year/client subfolders
+    NEW: Uses extracted Gemini data and existing Dropbox structure
     """
+    file_id = payload.file_id
     answers = payload.answers
     extension = payload.original_extension
 
-    # Get answers
-    date = answers.get("date", "")
-    doc_type = answers.get("doc_type", "")
-    client = answers.get("client", "")
+    # Get extracted answers from Gemini (stored in session)
+    session = question_sessions.get(file_id, {})
+    extracted_answers = session.get("extracted_answers", answers)
+
+    # Use Gemini-extracted data
+    date = extracted_answers.get("date", answers.get("date", ""))
+    doc_type = extracted_answers.get("doc_type", answers.get("doc_type", ""))
+    client = extracted_answers.get("client", answers.get("client", ""))
 
     # Sanitize parts
     sanitized_type = sanitize_filename_part(doc_type)
@@ -343,15 +402,39 @@ async def generate_filename(payload: GenerateName) -> Dict:
     # Build filename: {date}_{type}_{client}.{ext}
     suggested_name = f"{date}_{sanitized_type}_{sanitized_client}{extension}"
 
-    # AD-4: Suggest Dropbox path
-    suggested_path = suggest_path(doc_type)
+    # Get Dropbox structure and suggest intelligent path
+    try:
+        access_token = auth.get_access_token()
+        dropbox_structure = await get_existing_structure(access_token)
+        logger.info(f"Retrieved Dropbox structure: {len(dropbox_structure)} folders")
+    except Exception as e:
+        logger.warning(f"Could not retrieve Dropbox structure: {e}")
+        dropbox_structure = None
+
+    # Use intelligent path suggestion
+    path_info = suggest_path_intelligent(
+        doc_type=doc_type,
+        client=client,
+        date=date,
+        dropbox_structure=dropbox_structure
+    )
+
+    suggested_path = path_info["path"]
     full_path = get_full_path(suggested_path, suggested_name)
 
     return {
         "suggested_name": suggested_name,
         "original_extension": extension,
         "suggested_path": suggested_path,
-        "full_path": full_path
+        "full_path": full_path,
+        "organization": path_info["organization"],
+        "matched_existing": path_info["matched_existing"],
+        "created_folders": path_info["created_folders"],
+        "extracted_data": {
+            "doc_type": doc_type,
+            "client": client,
+            "date": date
+        }
     }
 
 

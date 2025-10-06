@@ -5,24 +5,40 @@ import './NotificationIcon.css';
 export function NotificationIcon() {
   const { notifications, removeNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const closeWithAnimation = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 200); // Duración de la animación
+  };
 
   // Cerrar el dropdown al hacer clic fuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) && isOpen && !isClosing) {
+        closeWithAnimation();
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+    // Solo agregar el listener cuando el dropdown está abierto
+    if (isOpen && !isClosing) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isOpen, isClosing]);
 
   const toggleNotifications = () => {
-    setIsOpen(!isOpen);
+    if (isOpen && !isClosing) {
+      closeWithAnimation();
+    } else if (!isOpen && !isClosing) {
+      setIsOpen(true);
+    }
   };
 
   const handleRemoveNotification = (id: string) => {
@@ -52,14 +68,14 @@ export function NotificationIcon() {
         )}
       </button>
       
-      {isOpen && (
+      {(isOpen || isClosing) && (
         <>
-          <div className="notification-dropdown">
+          <div className={`notification-dropdown ${isClosing ? 'notification-dropdown--closing' : ''}`}>
             <div className="notification-header">
               <h3>Notificaciones</h3>
               <button 
                 className="notification-close-button"
-                onClick={() => setIsOpen(false)}
+                onClick={closeWithAnimation}
               >
                 ×
               </button>
