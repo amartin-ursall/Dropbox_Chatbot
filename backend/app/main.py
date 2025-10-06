@@ -10,6 +10,8 @@ from pathlib import Path
 import uuid
 from typing import Dict, Optional
 import logging
+import re
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -230,120 +232,35 @@ async def logout():
 @app.post("/api/questions/start")
 async def start_questions(payload: QuestionStart) -> Dict:
     """
-    Start question flow for a file
-    Returns the first question (doc_type)
-
-    AD-2: Guía por preguntas
-    Refactored to use questions module
+    Start question flow
+    Redirects to URSALL flow
     """
-    file_id = payload.file_id
+    # Redirect to URSALL flow - call the URSALL endpoint directly
+    from app.main_ursall import start_ursall_questions, URSALLQuestionStart
 
-    # Initialize session
-    question_sessions[file_id] = {
-        "current_question": "doc_type",
-        "answers": {},
-        "extracted_answers": {}
-    }
-
-    return get_first_question()
+    ursall_payload = URSALLQuestionStart(file_id=payload.file_id)
+    return await start_ursall_questions(ursall_payload)
 
 
 @app.post("/api/questions/answer")
 async def answer_question(payload: QuestionAnswer) -> Dict:
     """
-    Submit answer to a question and get next question
-
-    AD-2: Validates answer and returns next question or completion
-    AD-3: Uses advanced validation with suggestions
-    Refactored to use questions module
-    Updated: Uses NLP extraction to intelligently extract key information
+    Answer a question in the flow
+    Redirects to URSALL flow
     """
-    file_id = payload.file_id
-    question_id = payload.question_id
-    answer = payload.answer
-
-    # STEP 1: Extract key information from user response using AI
-    logger.info(f"Original answer: {answer}")
-    try:
-        extracted_answer = await extract_information_ai(question_id, answer)
-        logger.info(f"Extracted answer: {extracted_answer}")
-
-        # Check for ambiguity
-        if extracted_answer == "AMBIGUO":
-            # Generate helpful clarification message based on question type
-            clarification_messages = {
-                "client": "No pude identificar claramente el nombre del cliente. Por favor, proporciona el nombre completo (ej: 'Juan Pérez' o 'Acme Corp S.L.')",
-                "doc_type": "No pude identificar el tipo de documento. Por favor, especifica el tipo (ej: 'factura', 'contrato', 'recibo', 'nómina')",
-                "date": "No pude identificar una fecha válida. Por favor, usa un formato claro (ej: '15/01/2025' o '2025-01-15')"
-            }
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "error": "AMBIGUOUS_RESPONSE",
-                    "message": clarification_messages.get(question_id, "Respuesta ambigua, por favor proporciona más información"),
-                    "suggestion": "Sé más específico en tu respuesta"
-                }
-            )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"AI extraction error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al procesar la respuesta: {str(e)}"
-        )
-
-    # STEP 2: Validate with advanced validators and generate suggestions on error
-    try:
-        if question_id == "doc_type":
-            validated_answer = validate_doc_type_advanced(extracted_answer)
-        elif question_id == "client":
-            validated_answer = validate_client_advanced(extracted_answer)
-        elif question_id == "date":
-            validated_answer, warning = validate_date_advanced(extracted_answer)
-            # Note: warning stored but not returned in this endpoint
-            # Could be added to response if needed
-        else:
-            raise HTTPException(status_code=400, detail="Invalid question_id")
-    except FileValidationError as e:
-        # AD-3: Generate suggestion for common mistakes
-        suggestion = None
-        if question_id == "doc_type":
-            suggestion = generate_doc_type_suggestion(extracted_answer)
-        elif question_id == "date":
-            suggestion = generate_date_suggestion(extracted_answer)
-
-        # Return error with optional suggestion
-        raise HTTPException(
-            status_code=e.status_code,
-            detail={
-                "detail": e.message,
-                "suggestion": suggestion
-            } if suggestion else e.message
-        )
-
-    # Store answer (both extracted and validated)
-    if file_id not in question_sessions:
-        question_sessions[file_id] = {"answers": {}, "extracted_answers": {}}
-
-    # Ensure extracted_answers key exists (for existing sessions)
-    if "extracted_answers" not in question_sessions[file_id]:
-        question_sessions[file_id]["extracted_answers"] = {}
-
-    question_sessions[file_id]["answers"][question_id] = validated_answer
-    question_sessions[file_id]["extracted_answers"][question_id] = extracted_answer
-
-    # Get next question using refactored logic
-    next_q = get_next_question(question_id)
-    completed = is_last_question(question_id)
-
-    return {
-        "next_question": next_q,
-        "completed": completed,
-        "extracted_value": extracted_answer,  # Lo que Gemini extrajo
-        "validated_value": validated_answer   # Lo que pasó la validación
-    }
+    # Redirect to URSALL flow
+    from app.main_ursall import answer_ursall_question
+    
+    # Create a compatible payload for URSALL
+    from app.main_ursall import URSALLQuestionAnswer
+    ursall_payload = URSALLQuestionAnswer(
+        file_id=payload.file_id,
+        question_id=payload.question_id,
+        answer=payload.answer
+    )
+    
+    # Call URSALL answer endpoint
+    return await answer_ursall_question(ursall_payload)
 
 
 @app.post("/api/suggest-path")
@@ -379,69 +296,86 @@ async def suggest_dropbox_path(payload: SuggestPath) -> Dict:
     }
 
 
+# Funciones auxiliares para generar nombres de archivo
+def sanitize_filename_part(text: str) -> str:
+    """Sanitiza una parte del nombre de archivo"""
+    if not text:
+        return "desconocido"
+    
+    # Eliminar caracteres no permitidos
+    text = re.sub(r'[\\/*?:"<>|]', "", text)
+    # Reemplazar espacios con guiones bajos
+    text = re.sub(r'\s+', "_", text.strip())
+    # Limitar longitud
+    return text[:30]
+
+def suggest_path_intelligent(doc_type: str, client: str, date: str) -> str:
+    """Sugiere una ruta inteligente basada en el tipo de documento, cliente y fecha"""
+    # Obtener año actual o del documento si está disponible
+    year = datetime.now().year
+    if date:
+        try:
+            # Intentar extraer año de la fecha
+            date_parts = date.split("-")
+            if len(date_parts) >= 3:
+                year = date_parts[0]
+        except:
+            pass
+    
+    # Sanitizar cliente para carpeta
+    client_folder = sanitize_filename_part(client)
+    if not client_folder or client_folder == "desconocido":
+        client_folder = "Otros_Clientes"
+    
+    # Determinar carpeta base según tipo de documento
+    doc_type_lower = doc_type.lower() if doc_type else ""
+    
+    if "contrato" in doc_type_lower:
+        base_folder = "Contratos"
+    elif "factura" in doc_type_lower:
+        base_folder = "Facturas"
+    elif "informe" in doc_type_lower:
+        base_folder = "Informes"
+    else:
+        base_folder = "Documentos"
+    
+    # Construir ruta
+    return f"/{base_folder}/{year}/{client_folder}"
+
 @app.post("/api/questions/generate-name")
 async def generate_filename(payload: GenerateName) -> Dict:
     """
     Generate suggested filename and intelligent path based on Dropbox structure
+    Redirects to URSALL flow
 
     AD-2: Format {fecha}_{tipo}_{cliente}.{ext}
     AD-4: Enhanced path with year/client subfolders
-    NEW: Uses extracted Gemini data and existing Dropbox structure
     """
-    file_id = payload.file_id
-    answers = payload.answers
-    extension = payload.original_extension
-
-    # Get extracted answers from Gemini (stored in session)
-    session = question_sessions.get(file_id, {})
-    extracted_answers = session.get("extracted_answers", answers)
-
-    # Use Gemini-extracted data
-    date = extracted_answers.get("date", answers.get("date", ""))
-    doc_type = extracted_answers.get("doc_type", answers.get("doc_type", ""))
-    client = extracted_answers.get("client", answers.get("client", ""))
-
-    # Sanitize parts
-    sanitized_type = sanitize_filename_part(doc_type)
-    sanitized_client = sanitize_filename_part(client)
-
-    # Build filename: {date}_{type}_{client}.{ext}
-    suggested_name = f"{date}_{sanitized_type}_{sanitized_client}{extension}"
-
-    # Get Dropbox structure and suggest intelligent path
     try:
-        access_token = auth.get_access_token()
-        dropbox_structure = await get_existing_structure(access_token)
-        logger.info(f"Retrieved Dropbox structure: {len(dropbox_structure)} folders")
+        # Redirect to URSALL flow
+        from app.main_ursall import generate_ursall_path, URSALLGeneratePath
+
+        logger.info(f"Generando nombre de archivo para file_id: {payload.file_id}")
+        logger.info(f"Respuestas recibidas: {payload.answers}")
+
+        # Create URSALL payload
+        ursall_payload = URSALLGeneratePath(
+            file_id=payload.file_id,
+            answers=payload.answers,
+            original_extension=payload.original_extension
+        )
+
+        # Call URSALL generate-path endpoint function directly
+        result = await generate_ursall_path(ursall_payload)
+        logger.info(f"Resultado generado: {result}")
+        return result
+
+    except HTTPException as he:
+        logger.error(f"HTTPException generando nombre: {he.detail}")
+        raise
     except Exception as e:
-        logger.warning(f"Could not retrieve Dropbox structure: {e}")
-        dropbox_structure = None
-
-    # Use intelligent path suggestion
-    path_info = suggest_path_intelligent(
-        doc_type=doc_type,
-        client=client,
-        date=date,
-        dropbox_structure=dropbox_structure
-    )
-
-    suggested_path = path_info["path"]
-    full_path = get_full_path(suggested_path, suggested_name)
-
-    return {
-        "suggested_name": suggested_name,
-        "original_extension": extension,
-        "suggested_path": suggested_path,
-        "full_path": full_path,
-        "organization": path_info["organization"],
-        "matched_existing": path_info["matched_existing"],
-        "created_folders": path_info["created_folders"],
-        "extracted_data": {
-            "doc_type": doc_type,
-            "client": client,
-            "date": date
-        }
-    }
+        logger.error(f"Error generando nombre de archivo: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error generando nombre: {str(e)}")
 
 
 @app.get("/api/user/info")
@@ -594,12 +528,19 @@ async def upload_final(payload: UploadFinal) -> Dict:
         if file_id in question_sessions:
             del question_sessions[file_id]
 
+        # Preparar mensaje de respuesta
+        message = "Archivo subido exitosamente a Dropbox"
+        if result.get("was_renamed"):
+            message += f". El archivo fue renombrado a '{result['name']}' porque ya existía uno con el mismo nombre."
+
         return {
             "success": True,
-            "message": "Archivo subido exitosamente a Dropbox",
+            "message": message,
             "dropbox_path": result["path"],
             "dropbox_name": result["name"],
-            "size": result["size"]
+            "size": result["size"],
+            "was_renamed": result.get("was_renamed", False),
+            "original_filename": new_filename if result.get("was_renamed") else None
         }
     except HTTPException:
         raise
