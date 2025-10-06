@@ -41,7 +41,13 @@ from app import auth
 from app.dropbox_uploader import upload_file_to_dropbox
 from fastapi.responses import RedirectResponse
 
+# Import URSALL router
+from app.main_ursall import router as ursall_router
+
 app = FastAPI(title="Dropbox Chatbot Organizer")
+
+# Include URSALL router
+app.include_router(ursall_router)
 
 # CORS middleware for frontend
 app.add_middleware(
