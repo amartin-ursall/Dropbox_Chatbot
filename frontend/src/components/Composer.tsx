@@ -33,6 +33,18 @@ export function Composer({
       textareaRef.current.style.height = `${height}px`
     }
   }, [message])
+  
+  // Mantener el foco en el textarea
+  useEffect(() => {
+    // Pequeño retraso para asegurar que el DOM esté listo
+    const focusTimeout = setTimeout(() => {
+      if (textareaRef.current && !disabled) {
+        textareaRef.current.focus()
+      }
+    }, 100)
+    
+    return () => clearTimeout(focusTimeout)
+  }, [disabled])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,6 +55,12 @@ export function Composer({
       // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = '36px'
+        // Volver a enfocar el textarea después de enviar
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus()
+          }
+        }, 10)
       }
     }
   }
@@ -68,6 +86,7 @@ export function Composer({
           disabled={disabled}
           rows={1}
           aria-label="Mensaje"
+          autoFocus
         />
         <button
           type="submit"

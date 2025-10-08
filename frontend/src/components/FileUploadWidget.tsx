@@ -161,6 +161,13 @@ export function FileUploadWidget({ onUploadComplete }: FileUploadWidgetProps) {
                 <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                {/* PDF text */}
+                <path d="M8 12.5C8 12.2239 8.22386 12 8.5 12H9.5C9.77614 12 10 12.2239 10 12.5V14.5C10 14.7761 9.77614 15 9.5 15H8.5C8.22386 15 8 14.7761 8 14.5V12.5Z" fill="currentColor"/>
+                <path d="M11 12.5C11 12.2239 11.2239 12 11.5 12H12.5C12.7761 12 13 12.2239 13 12.5V14.5C13 14.7761 12.7761 15 12.5 15H11.5C11.2239 15 11 14.7761 11 14.5V12.5Z" fill="currentColor"/>
+                <path d="M14 12.5C14 12.2239 14.2239 12 14.5 12H15.5C15.7761 12 16 12.2239 16 12.5V14.5C16 14.7761 15.7761 15 15.5 15H14.5C14.2239 15 14 14.7761 14 14.5V12.5Z" fill="currentColor"/>
+                <path d="M8.5 12.5H9.5V14.5H8.5V12.5Z" fill="currentColor"/>
+                <path d="M11.5 12.5H12.5V14.5H11.5V12.5Z" fill="currentColor"/>
+                <path d="M14.5 12.5H15.5V14.5H14.5V12.5Z" fill="currentColor"/>
               </svg>
             </div>
             <div className="file-info">
