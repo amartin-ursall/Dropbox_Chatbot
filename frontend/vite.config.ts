@@ -16,23 +16,26 @@ const sslExists = fs.existsSync(keyPath) && fs.existsSync(certPath)
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0', // Listen on all interfaces
+    host: '0.0.0.0', // Listen on all network interfaces for external access
     port: process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : 5173,
     strictPort: false,
     https: useHttps && sslExists ? {
       key: fs.readFileSync(keyPath),
       cert: fs.readFileSync(certPath),
     } : undefined,
+    cors: true, // Enable CORS for network access
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:8000',
+        target: process.env.VITE_BACKEND_URL || 'http://dropboxaiorganizer.com:8000',
         changeOrigin: true,
         secure: false,
+        ws: true, // Enable WebSocket proxy
       },
       '/auth': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:8000',
+        target: process.env.VITE_BACKEND_URL || 'http://dropboxaiorganizer.com:8000',
         changeOrigin: true,
         secure: false,
+        ws: true,
       },
     },
   },
@@ -40,6 +43,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: false,
+    cors: true,
     https: useHttps && sslExists ? {
       key: fs.readFileSync(keyPath),
       cert: fs.readFileSync(certPath),
