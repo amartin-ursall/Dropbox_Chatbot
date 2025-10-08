@@ -170,7 +170,7 @@ export function UserInfo() {
                     className="user-info__logout"
                     onClick={async () => {
                       try {
-                        await fetch('http://localhost:8000/auth/logout', { method: 'POST' })
+                        await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST' })
                         window.location.reload()
                       } catch (error) {
                         console.error('Error logging out:', error)

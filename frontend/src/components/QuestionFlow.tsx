@@ -32,7 +32,8 @@ interface QuestionFlowProps {
   onFileUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void
 }
 
-const API_BASE_URL = 'http://localhost:8000'
+// Use environment variable or specific IP for network access
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000'
 
 export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onError, onFileUpload }: QuestionFlowProps) {
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null)
