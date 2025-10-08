@@ -6,8 +6,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useUser } from '../contexts/UserContext'
 import './UserInfo.css'
 
-// Use domain-based URL for network access
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://dropboxaiorganizer.com:8000'
+// Use specific IP for network access
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000'
 
 export function UserInfo() {
   const { userInfo, isLoading, authError, refreshUserInfo } = useUser()

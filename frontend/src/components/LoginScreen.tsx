@@ -12,8 +12,8 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const handleLogin = () => {
-    // Get backend URL from environment or use domain-based URL for network access
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://dropboxaiorganizer.com:8000'
+    // Get backend URL from environment or use specific IP for network access
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000'
     // Redirect to backend OAuth endpoint
     window.location.href = `${backendUrl}/auth/dropbox/login`
   }

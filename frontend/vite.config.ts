@@ -26,13 +26,13 @@ export default defineConfig({
     cors: true, // Enable CORS for network access
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://dropboxaiorganizer.com:8000',
+        target: process.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000',
         changeOrigin: true,
         secure: false,
         ws: true, // Enable WebSocket proxy
       },
       '/auth': {
-        target: process.env.VITE_BACKEND_URL || 'http://dropboxaiorganizer.com:8000',
+        target: process.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000',
         changeOrigin: true,
         secure: false,
         ws: true,
