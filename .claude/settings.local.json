@@ -47,7 +47,8 @@
       "Bash(if [ ! -d \"ssl\" ])",
       "Bash(then mkdir ssl)",
       "Bash(powershell:*)",
-      "Bash(openssl:*)"
+      "Bash(openssl:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
