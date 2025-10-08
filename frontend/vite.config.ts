@@ -17,7 +17,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0', // Listen on all interfaces
-    port: process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : (useHttps ? 443 : 5173),
+    port: process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : 5173,
     strictPort: false,
     https: useHttps && sslExists ? {
       key: fs.readFileSync(keyPath),
@@ -38,7 +38,7 @@ export default defineConfig({
   },
   preview: {
     host: '0.0.0.0',
-    port: 443,
+    port: 5173,
     strictPort: false,
     https: useHttps && sslExists ? {
       key: fs.readFileSync(keyPath),

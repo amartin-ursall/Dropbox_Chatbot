@@ -27,7 +27,9 @@ echo ========================================
 echo Servers starting...
 echo.
 echo Backend:  http://localhost:8000
-echo Frontend: https://dropboxaiorganizer.com
+echo          http://dropboxaiorganizer.com:8000
+echo Frontend: http://localhost:5173
+echo          http://dropboxaiorganizer.com:5173
 echo API Docs: http://localhost:8000/docs
 echo.
 echo Press Ctrl+C in each window to stop

@@ -59,6 +59,7 @@ FRONTEND_URLS = os.getenv("FRONTEND_URLS", "").split(",") if os.getenv("FRONTEND
     "http://localhost:5173",
     "https://localhost:5173",
     "https://localhost",
+    "http://dropboxaiorganizer.com:5173",
     "https://dropboxaiorganizer.com:5173",
     "https://dropboxaiorganizer.com",
     "http://dropboxaiorganizer.com"

@@ -48,7 +48,10 @@
       "Bash(then mkdir ssl)",
       "Bash(powershell:*)",
       "Bash(openssl:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(if [ -f \"backend/.env\" ])",
+      "Bash(then cat backend/.env)",
+      "Bash(else echo \"Archivo .env no existe\")"
     ],
     "deny": [],
     "ask": []
