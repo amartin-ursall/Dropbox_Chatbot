@@ -52,14 +52,22 @@ app = FastAPI(title="Dropbox Chatbot Organizer")
 app.include_router(ursall_router)
 
 # CORS middleware for frontend
+# Support both development and production URLs
+import os
+
+FRONTEND_URLS = os.getenv("FRONTEND_URLS", "").split(",") if os.getenv("FRONTEND_URLS") else [
+    "http://localhost:5173",
+    "https://localhost:5173",
+    "https://localhost",
+    "http://dropboxaiorganizer.com:5173",
+    "https://dropboxaiorganizer.com:5173",
+    "https://dropboxaiorganizer.com",
+    "http://dropboxaiorganizer.com"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://localhost:5173",
-        "https://dropboxaiorganizer.com:5173",
-        "https://dropboxaiorganizer.com"
-    ],
+    allow_origins=FRONTEND_URLS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -195,12 +203,14 @@ async def dropbox_callback(code: str):
         # Store in session
         auth.store_session(token_data)
 
-        # Redirect to frontend
-        return RedirectResponse(url="https://dropboxaiorganizer.com:5173", status_code=307)
+        # Redirect to frontend (use environment variable or default)
+        frontend_url = os.getenv("FRONTEND_URL", "https://dropboxaiorganizer.com")
+        return RedirectResponse(url=frontend_url, status_code=307)
     except HTTPException as e:
         # Redirect to frontend with error
+        frontend_url = os.getenv("FRONTEND_URL", "https://dropboxaiorganizer.com")
         return RedirectResponse(
-            url=f"https://dropboxaiorganizer.com:5173?auth_error={e.detail}",
+            url=f"{frontend_url}?auth_error={e.detail}",
             status_code=307
         )
 

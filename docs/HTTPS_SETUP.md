@@ -1,6 +1,8 @@
 # HTTPS Configuration Setup
 
-This application is now configured to run with HTTPS on the domain `dropboxaiorganizer.com`.
+Esta aplicación está configurada para ejecutarse con HTTPS en el dominio `dropboxaiorganizer.com` **sin puerto visible** (puerto 443 estándar).
+
+> ⚠️ **Para despliegue en producción completo**, consulta [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)
 
 ## Configuration Steps
 
@@ -60,21 +62,48 @@ sudo update-ca-certificates
 
 ### 4. Start the Application
 
+#### Opción A: Scripts Automáticos (Recomendado)
+
+**Para Desarrollo (puerto 5173):**
+```cmd
+start-dev.bat
+```
+
+**Para Producción-like (puerto 443 - Requiere Administrador):**
+```cmd
+# Clic derecho → Ejecutar como Administrador
+start-prod.bat
+```
+
+#### Opción B: Manual
+
 **Backend:**
 ```bash
 cd backend
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Frontend:**
+**Frontend (Desarrollo - Puerto 5173):**
 ```bash
 cd frontend
 npm run dev
 ```
 
+**Frontend (Producción - Puerto 443, Requiere Administrador):**
+```bash
+cd frontend
+npm run dev -- --mode production
+```
+
 ### 5. Access the Application
 
+**Modo Desarrollo:**
 - Frontend: `https://dropboxaiorganizer.com:5173`
+- Backend API: `http://localhost:8000`
+- API Docs: `http://localhost:8000/docs`
+
+**Modo Producción (Puerto 443):**
+- Frontend: `https://dropboxaiorganizer.com` (¡SIN PUERTO!)
 - Backend API: `http://localhost:8000`
 - API Docs: `http://localhost:8000/docs`
 
