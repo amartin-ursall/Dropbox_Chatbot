@@ -414,19 +414,22 @@ async def upload_ursall_final(payload: URSALLUploadFinal) -> Dict:
         # Crear estructura de carpetas
         from app.dropbox_uploader import create_folder_if_not_exists
 
+        logger.info(f"=== Creando estructura de carpetas URSALL ===")
+        logger.info(f"Total de carpetas a crear: {len(folder_structure)}")
+
         for folder_path in folder_structure:
             await create_folder_if_not_exists(access_token, folder_path)
             logger.info(f"Carpeta creada/verificada: {folder_path}")
 
-        # Subir archivo
-        # Extraer carpeta y nombre del path completo
-        path_parts = dropbox_path.rsplit("/", 1)
-        folder = path_parts[0] if len(path_parts) > 1 else "/"
+        # Subir archivo directamente a dropbox_path (que ya incluye la subcarpeta correcta)
+        logger.info(f"=== Subiendo archivo ===")
+        logger.info(f"Dropbox path (destino): {dropbox_path}")
+        logger.info(f"Filename: {filename}")
 
         result = await upload_file_to_dropbox(
             access_token=access_token,
             file_path=str(temp_file),
-            dropbox_path=folder,
+            dropbox_path=dropbox_path,  # Ya es la ruta completa de la subcarpeta
             new_filename=filename
         )
 

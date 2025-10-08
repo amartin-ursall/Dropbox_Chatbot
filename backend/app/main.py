@@ -54,7 +54,12 @@ app.include_router(ursall_router)
 # CORS middleware for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://localhost:5173",
+        "https://dropboxaiorganizer.com:5173",
+        "https://dropboxaiorganizer.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -191,11 +196,11 @@ async def dropbox_callback(code: str):
         auth.store_session(token_data)
 
         # Redirect to frontend
-        return RedirectResponse(url="http://localhost:5173", status_code=307)
+        return RedirectResponse(url="https://dropboxaiorganizer.com:5173", status_code=307)
     except HTTPException as e:
         # Redirect to frontend with error
         return RedirectResponse(
-            url=f"http://localhost:5173?auth_error={e.detail}",
+            url=f"https://dropboxaiorganizer.com:5173?auth_error={e.detail}",
             status_code=307
         )
 

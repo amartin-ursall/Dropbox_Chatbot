@@ -39,7 +39,15 @@
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
       "Bash(python3 -m pytest backend/tests/test_nlp_extractor.py -v)",
-      "Bash(where python)"
+      "Bash(where python)",
+      "Bash(C:Python312python.exe -c \"\nfrom app.path_mapper_ursall import suggest_path_ursall\n\n# Ejemplo de procedimiento con tipo de documento Pericial\nresult = suggest_path_ursall(\n    client_name=''GRUPO GORETTI'',\n    tipo_trabajo=''procedimiento'',\n    doc_type=''Pericial'',\n    year=''2025'',\n    month=''08'',\n    jurisdiccion=''social'',\n    juzgado_num=''2'',\n    demarcacion=''Tenerife'',\n    num_procedimiento=''455'',\n    year_proc=''2025'',\n    parte_a=''Pedro Perez'',\n    parte_b=''Cabildo Gomera'',\n    materia_proc=''Despidos''\n)\n\nprint(''=== RESULTADO DE suggest_path_ursall ==='')\nprint(f''path: {result[\"\"path\"\"]}'')\nprint(f''subfolder: {result[\"\"subfolder\"\"]}'')\nprint(f''full_path: {result[\"\"full_path\"\"]}'')\nprint(f''\\n=== ESTRUCTURA DE CARPETAS A CREAR ==='')\nfor i, folder in enumerate(result[''folder_structure''], 1):\n    print(f''{i}. {folder}'')\n\")",
+      "Bash(py:*)",
+      "Bash(mkdir:*)",
+      "Bash(openssl req:*)",
+      "Bash(if [ ! -d \"ssl\" ])",
+      "Bash(then mkdir ssl)",
+      "Bash(powershell:*)",
+      "Bash(openssl:*)"
     ],
     "deny": [],
     "ask": []
