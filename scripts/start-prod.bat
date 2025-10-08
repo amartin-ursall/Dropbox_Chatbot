@@ -26,8 +26,38 @@ if %errorlevel% neq 0 (
 )
 
 echo.
+echo Checking dependencies...
+echo.
+
+echo [1/3] Checking Frontend dependencies...
+cd ..\frontend
+if not exist "node_modules\" (
+    echo Installing Frontend dependencies...
+    npm install
+) else (
+    echo Frontend dependencies already installed (skipping)
+)
+
+echo.
+echo [2/3] Checking Backend dependencies...
+cd ..\backend
+if not exist "venv\" (
+    echo Creating Python virtual environment...
+    python -m venv venv
+    echo Installing Backend dependencies...
+    call venv\Scripts\activate.bat
+    pip install -r requirements.txt
+) else (
+    echo Backend virtual environment already exists (skipping)
+)
+
+echo.
+echo [3/3] Starting servers...
+cd ..\scripts
+
+echo.
 echo Starting Backend on port 8000 (Production Mode)...
-start "Backend Server (Port 8000 - Production)" cmd /k "cd ..\backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+start "Backend Server (Port 8000 - Production)" cmd /k "cd ..\backend && venv\Scripts\activate.bat && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
 timeout /t 3 /nobreak >nul
 

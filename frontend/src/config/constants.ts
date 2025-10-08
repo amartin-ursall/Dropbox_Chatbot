@@ -3,7 +3,9 @@
  * Centralized configuration
  */
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Use domain-based URL for network access, fallback to localhost for local development
+export const API_BASE_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.VITE_BACKEND_URL || 'http://dropboxaiorganizer.com:8000')
 
 export const ALLOWED_FILE_EXTENSIONS = [
   '.pdf',

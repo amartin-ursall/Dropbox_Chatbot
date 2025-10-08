@@ -25,8 +25,38 @@ if ! grep -q "dropboxaiorganizer.com" /etc/hosts; then
 fi
 
 echo ""
+echo "Checking dependencies..."
+echo ""
+
+echo "[1/3] Checking Frontend dependencies..."
+cd ../frontend
+if [ ! -d "node_modules" ]; then
+    echo "Installing Frontend dependencies..."
+    npm install
+else
+    echo "Frontend dependencies already installed (skipping)"
+fi
+
+echo ""
+echo "[2/3] Checking Backend dependencies..."
+cd ../backend
+if [ ! -d "venv" ]; then
+    echo "Creating Python virtual environment..."
+    python3 -m venv venv
+    echo "Installing Backend dependencies..."
+    source venv/bin/activate
+    pip install -r requirements.txt
+else
+    echo "Backend virtual environment already exists (skipping)"
+fi
+
+echo ""
+echo "[3/3] Starting servers..."
+
+echo ""
 echo "Starting Backend on port 8000..."
 cd ../backend
+source venv/bin/activate
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
