@@ -52,7 +52,8 @@
       "Bash(if [ -f \"backend/.env\" ])",
       "Bash(then cat backend/.env)",
       "Bash(else echo \"Archivo .env no existe\")",
-      "Bash(where python3)"
+      "Bash(where python3)",
+      "Bash(powershell.exe:*)"
     ],
     "deny": [],
     "ask": []

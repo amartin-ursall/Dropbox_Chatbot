@@ -8,11 +8,17 @@ Esta carpeta contiene todos los scripts y configuraciones necesarios para desple
 
 | Archivo | Descripción |
 |---------|-------------|
+| **Scripts de Instalación Inicial** |
 | `install-iis-components.ps1` | Instala IIS, URL Rewrite Module y ARR |
 | `install-backend-service.ps1` | Instala el backend como servicio Windows con NSSM |
 | `install-ssl-certificate.ps1` | Configura certificado SSL (Let's Encrypt o autofirmado) |
-| `web.config` | Configuración de IIS para reverse proxy y SPA |
 | `deploy.ps1` | Script completo de deployment automatizado |
+| **Scripts de Actualización** |
+| `update.ps1` | ✨ Actualiza la aplicación desde Git con backup automático |
+| `rollback.ps1` | 🔄 Restaura versión anterior desde backup |
+| **Configuración** |
+| `web.config` | Configuración de IIS para reverse proxy y SPA |
+| `IIS_PRODUCTION_SETUP.md` | Guía completa paso a paso |
 
 ---
 
@@ -120,15 +126,59 @@ Restart-Service DropboxBackend
 
 ## 🔄 Actualización de la Aplicación
 
-Para actualizar una instalación existente:
+### Método Recomendado: Script de Actualización Automática
 
 ```powershell
-# Ejecutar como Administrador
-cd deployment
-.\deploy.ps1 -Domain tudominio.com
+# Ejecutar como Administrador en el servidor de producción
+cd C:\Users\amartin\Documents\Aplicativos\Dropbox_Chatbot\deployment
+
+# Actualización completa (backend + frontend)
+.\update.ps1
+
+# Solo backend
+.\update.ps1 -BackendOnly
+
+# Solo frontend
+.\update.ps1 -FrontendOnly
 ```
 
-Esto recompilará el frontend, copiará los nuevos archivos y reiniciará los servicios.
+**¿Qué hace el script `update.ps1`?**
+1. ✅ Crea backup automático de la versión actual
+2. ✅ Actualiza código desde Git (`git pull`)
+3. ✅ Detiene servicios
+4. ✅ Copia archivos actualizados (preserva `.env`)
+5. ✅ Reinstala dependencias si es necesario
+6. ✅ Compila frontend
+7. ✅ Reinicia servicios
+8. ✅ Verifica que funcione correctamente
+
+### Rollback (Si algo salió mal)
+
+```powershell
+# Listar backups y seleccionar interactivamente
+.\rollback.ps1
+
+# O restaurar un backup específico
+.\rollback.ps1 -BackupPath "C:\backups\dropbox-organizer\2025-10-10_14-30-00"
+```
+
+### Actualización Manual (Alternativa)
+
+```powershell
+.\deploy.ps1 -Domain dropboxorganizer.com
+```
+
+---
+
+## 📦 Backups Automáticos
+
+Cada vez que ejecutas `update.ps1`, se crea automáticamente un backup en:
+```
+C:\backups\dropbox-organizer\
+├── 2025-10-10_14-30-00\    # Backup antes de actualización
+├── 2025-10-11_09-15-30\    # Otro backup
+└── pre-rollback_...         # Backup antes de rollback
+```
 
 ---
 
