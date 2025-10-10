@@ -11,9 +11,10 @@ import os
 from pathlib import Path
 
 # Dropbox OAuth2 configuration
-DROPBOX_APP_KEY = "rvsal3as0j73d3y"
-DROPBOX_APP_SECRET = "h933ko0ruapay5i"
-DROPBOX_REDIRECT_URI = "http://localhost:8000/auth/dropbox/callback"
+DROPBOX_APP_KEY = os.getenv("DROPBOX_APP_KEY", "rvsal3as0j73d3y")
+DROPBOX_APP_SECRET = os.getenv("DROPBOX_APP_SECRET", "h933ko0ruapay5i")
+# Use environment variable for redirect URI or default to domain (works with hosts file)
+DROPBOX_REDIRECT_URI = os.getenv("DROPBOX_REDIRECT_URI", "http://dropboxaiorganizer.com:8000/auth/dropbox/callback")
 
 # Session storage file path
 SESSION_FILE = Path(os.path.expanduser("~")) / ".dropbox_chatbot_session.json"
