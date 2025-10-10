@@ -16,11 +16,12 @@ JURISDICCION_PATTERNS = [
     r'\b(contencioso|social|civil|penal|instrucción|instruccion)\b',
 ]
 
-# Patrones para número de juzgado
+# Patrones para número de juzgado (orden de especificidad)
 JUZGADO_NUM_PATTERNS = [
-    r'(?:juzgado|jdo\.?)\s+(?:n[úuº°]?\s*)?(\d+)',
-    r'(?:número|numero|nº|n\.?)\s*(\d+)',
-    r'\b([A-Z]{2,3})(\d+)\b',  # Ej: CA1, SC2, CIV4
+    r'(?:juzgado|jdo\.?)\s+(?:n[úuº°]?\s*|numero\s+|número\s+)?(\d+)',  # "juzgado numero 2", "juzgado nº 2"
+    r'(?:número|numero|nº|n\.?)\s+(?:del?\s+juzgado\s+)?(\d+)',  # "numero 2", "número del juzgado 2"
+    r'(?:es\s+el\s+)?(?:juzgado\s+)?(?:numero|número)\s+(\d+)',  # "es el juzgado numero 2"
+    r'\b([A-Z]{2,3})(\d+)\b',  # "CA1", "SC2" (dos grupos)
 ]
 
 # Patrones para demarcación
@@ -193,10 +194,11 @@ def extract_partes(user_input: str) -> Dict[str, Optional[str]]:
 
 def extract_materia(user_input: str) -> Optional[str]:
     """
-    Extrae la materia del procedimiento
+    Extrae la materia del procedimiento con normalización mejorada
 
     Ejemplos:
     - "Materia: Despido" → "Despidos"
+    - "materia de Despidos" → "Despidos"
     - "sobre fijeza" → "Fijeza"
     - "Art 316 CP" → "Art316CP"
     """
@@ -222,14 +224,75 @@ def extract_materia(user_input: str) -> Optional[str]:
     if art_match:
         return f"Art{art_match.group(1)}CP"
 
-    # Buscar patrón "materia: X"
-    materia_match = re.search(r'(?:materia|asunto|sobre)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ]+)', user_input, re.IGNORECASE)
+    # Buscar patrón "materia: X" o "materia de X"
+    materia_match = re.search(r'(?:materia|asunto)(?:\s+de)?\s*:?\s*([A-ZÁÉÍÓÚ][a-záéíóúñ]+)', user_input, re.IGNORECASE)
     if materia_match:
         materia = materia_match.group(1).strip()
         # Normalizar: sin tildes, sin artículos
         import unicodedata
         materia = unicodedata.normalize('NFD', materia).encode('ascii', 'ignore').decode('utf-8')
         return materia.capitalize()
+
+    # Si no hay patrón específico, devolver el input limpio
+    return None
+
+
+def extract_year(user_input: str) -> Optional[str]:
+    """
+    Extrae año de texto en lenguaje natural
+
+    Ejemplos:
+    - "año 2025" → "2025"
+    - "2025" → "2025"
+    - "en el año 2024" → "2024"
+    """
+    # Buscar año de 4 dígitos
+    year_match = re.search(r'\b(20\d{2})\b', user_input)
+    if year_match:
+        return year_match.group(1)
+
+    return None
+
+
+def extract_month(user_input: str) -> Optional[str]:
+    """
+    Extrae mes y lo normaliza a formato MM
+
+    Ejemplos:
+    - "mes de agosto" → "08"
+    - "agosto" → "08"
+    - "08" → "08"
+    - "mes 8" → "08"
+    """
+    # Mapeo de meses en español
+    meses = {
+        'enero': '01', 'ene': '01',
+        'febrero': '02', 'feb': '02',
+        'marzo': '03', 'mar': '03',
+        'abril': '04', 'abr': '04',
+        'mayo': '05', 'may': '05',
+        'junio': '06', 'jun': '06',
+        'julio': '07', 'jul': '07',
+        'agosto': '08', 'ago': '08',
+        'septiembre': '09', 'sep': '09', 'sept': '09',
+        'octubre': '10', 'oct': '10',
+        'noviembre': '11', 'nov': '11',
+        'diciembre': '12', 'dic': '12',
+    }
+
+    user_input_lower = user_input.lower()
+
+    # Buscar nombre de mes
+    for mes_name, mes_num in meses.items():
+        if mes_name in user_input_lower:
+            return mes_num
+
+    # Buscar número de mes
+    mes_num_match = re.search(r'\b(0?[1-9]|1[0-2])\b', user_input)
+    if mes_num_match:
+        mes = mes_num_match.group(1)
+        # Normalizar a dos dígitos
+        return mes.zfill(2)
 
     return None
 
@@ -290,11 +353,15 @@ def extract_information_legal(question_id: str, user_input: str) -> any:
     """
     extractors = {
         "jurisdiccion": extract_jurisdiccion,
-        "juzgado_numero": extract_juzgado_numero,
+        "juzgado_num": extract_juzgado_numero,
+        "juzgado_numero": extract_juzgado_numero,  # Alias
         "demarcacion": extract_demarcacion,
         "num_procedimiento": extract_num_procedimiento,
         "partes": extract_partes,
         "materia": extract_materia,
+        "materia_proc": extract_materia,
+        "proyecto_year": extract_year,
+        "proyecto_month": extract_month,
         "proyecto_nombre": lambda x: extract_proyecto_info(x, "nombre"),
         "proyecto_materia": lambda x: extract_proyecto_info(x, "materia"),
     }

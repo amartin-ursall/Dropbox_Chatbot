@@ -6,7 +6,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useUser } from '../contexts/UserContext'
 import './UserInfo.css'
 
-const API_BASE_URL = 'http://localhost:8000'
+// Use specific IP for network access
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000'
 
 export function UserInfo() {
   const { userInfo, isLoading, authError, refreshUserInfo } = useUser()
@@ -169,7 +170,7 @@ export function UserInfo() {
                     className="user-info__logout"
                     onClick={async () => {
                       try {
-                        await fetch('http://localhost:8000/auth/logout', { method: 'POST' })
+                        await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST' })
                         window.location.reload()
                       } catch (error) {
                         console.error('Error logging out:', error)

@@ -29,7 +29,8 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
-const API_BASE_URL = 'http://localhost:8000'
+// Use environment variable or specific IP for network access
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000'
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos en milisegundos
 const CACHE_KEY = 'dropbox_user_info_cache'
 

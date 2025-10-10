@@ -46,7 +46,9 @@ function App() {
   const checkAuthStatus = async () => {
     try {
       console.log('Verificando estado de autenticación...')
-      const response = await fetch(`http://localhost:8000/auth/status`, {
+      // Use environment variable or specific IP
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000'
+      const response = await fetch(`${backendUrl}/auth/status`, {
         method: 'GET',
         credentials: 'include',
         headers: {
