@@ -6,7 +6,7 @@ Esta guía te llevará paso a paso para desplegar la aplicación Dropbox AI Orga
 
 - Windows Server 2016 o superior
 - Acceso de administrador al servidor
-- Dominio configurado apuntando al servidor (ej: `dropboxorganizer.com`)
+- Dominio configurado apuntando al servidor: `DropBoxAIOrganizer.com`
 - Python 3.8+ instalado
 - Node.js 16+ instalado (para compilar el frontend)
 
