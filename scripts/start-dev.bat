@@ -77,8 +77,8 @@ echo   Backend:  http://localhost:8000
 echo   API Docs: http://localhost:8000/docs
 echo.
 echo NETWORK ACCESS (from any device):
-echo   Frontend: http://dropboxaiorganizer.com:5173
-echo   Backend:  http://dropboxaiorganizer.com:8000
+echo   Frontend: https://dropboxaiorganizer.com:5173
+echo   Backend:  https://dropboxaiorganizer.com:8000
 echo   API Docs: http://dropboxaiorganizer.com:8000/docs
 echo.
 echo Note: Other devices must have dropboxaiorganizer.com

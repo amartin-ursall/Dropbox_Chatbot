@@ -49,9 +49,9 @@ $features = @(
 foreach ($feature in $features) {
     try {
         Install-WindowsFeature -name $feature -ErrorAction Stop
-        Write-Host "  ✓ $feature instalado" -ForegroundColor Gray
+        Write-Host ("  - {0} instalado" -f $feature) -ForegroundColor Gray
     } catch {
-        Write-Host "  ⚠ Advertencia instalando $feature" -ForegroundColor Yellow
+        Write-Host ("  - Advertencia instalando {0}" -f $feature) -ForegroundColor Yellow
     }
 }
 
@@ -62,24 +62,19 @@ $urlRewriteUrl = "https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44
 $urlRewritePath = "$env:TEMP\rewrite_amd64_en-US.msi"
 
 try {
-    # Verificar si ya está instalado
-    $installed = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |
-                 Where-Object { $_.DisplayName -like "*URL Rewrite*" }
-
+    $installed = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { $_.DisplayName -like "*URL Rewrite*" }
     if ($installed) {
-        Write-Host "  ✓ URL Rewrite Module ya está instalado" -ForegroundColor Green
+        Write-Host "  - URL Rewrite Module ya está instalado" -ForegroundColor Green
     } else {
         Write-Host "  Descargando URL Rewrite Module..." -ForegroundColor Gray
         Invoke-WebRequest -Uri $urlRewriteUrl -OutFile $urlRewritePath -UseBasicParsing
-
         Write-Host "  Instalando URL Rewrite Module..." -ForegroundColor Gray
-        Start-Process msiexec.exe -ArgumentList "/i `"$urlRewritePath`" /quiet /norestart" -Wait -NoNewWindow
-
-        Write-Host "  ✓ URL Rewrite Module instalado correctamente" -ForegroundColor Green
+        Start-Process msiexec.exe -ArgumentList ("/i \"{0}\" /quiet /norestart" -f $urlRewritePath) -Wait -NoNewWindow
+        Write-Host "  - URL Rewrite Module instalado correctamente" -ForegroundColor Green
         Remove-Item $urlRewritePath -Force -ErrorAction SilentlyContinue
     }
 } catch {
-    Write-Host "  ✗ Error instalando URL Rewrite: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ("  - Error instalando URL Rewrite: {0}" -f $_.Exception.Message) -ForegroundColor Red
     Write-Host "  Puedes instalarlo manualmente desde: https://www.iis.net/downloads/microsoft/url-rewrite" -ForegroundColor Yellow
 }
 
@@ -90,24 +85,19 @@ $arrUrl = "https://download.microsoft.com/download/E/9/8/E9849D6A-020E-47E4-9FD0
 $arrPath = "$env:TEMP\requestRouter_amd64.msi"
 
 try {
-    # Verificar si ya está instalado
-    $installed = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |
-                 Where-Object { $_.DisplayName -like "*Application Request Routing*" }
-
+    $installed = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { $_.DisplayName -like "*Application Request Routing*" }
     if ($installed) {
-        Write-Host "  ✓ ARR ya está instalado" -ForegroundColor Green
+        Write-Host "  - ARR ya está instalado" -ForegroundColor Green
     } else {
         Write-Host "  Descargando ARR..." -ForegroundColor Gray
         Invoke-WebRequest -Uri $arrUrl -OutFile $arrPath -UseBasicParsing
-
         Write-Host "  Instalando ARR..." -ForegroundColor Gray
-        Start-Process msiexec.exe -ArgumentList "/i `"$arrPath`" /quiet /norestart" -Wait -NoNewWindow
-
-        Write-Host "  ✓ ARR instalado correctamente" -ForegroundColor Green
+        Start-Process msiexec.exe -ArgumentList ("/i \"{0}\" /quiet /norestart" -f $arrPath) -Wait -NoNewWindow
+        Write-Host "  - ARR instalado correctamente" -ForegroundColor Green
         Remove-Item $arrPath -Force -ErrorAction SilentlyContinue
     }
 } catch {
-    Write-Host "  ✗ Error instalando ARR: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ("  - Error instalando ARR: {0}" -f $_.Exception.Message) -ForegroundColor Red
     Write-Host "  Puedes instalarlo manualmente desde: https://www.iis.net/downloads/microsoft/application-request-routing" -ForegroundColor Yellow
 }
 

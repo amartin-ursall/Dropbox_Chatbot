@@ -17,7 +17,7 @@ param(
 )
 
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  Instalación Backend como Servicio" -ForegroundColor Cyan
+Write-Host "  Instalacion Backend como Servicio" -ForegroundColor Cyan
 Write-Host "  Dropbox AI Organizer - URSALL" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
@@ -67,14 +67,14 @@ if (-not $nssmInstalled) {
         Remove-Item $nssmZip -Force -ErrorAction SilentlyContinue
         Remove-Item $nssmExtract -Recurse -Force -ErrorAction SilentlyContinue
 
-        Write-Host "  ✓ NSSM instalado correctamente en $nssmPath" -ForegroundColor Green
+        Write-Host "  OK NSSM instalado correctamente en $nssmPath" -ForegroundColor Green
     } catch {
-        Write-Host "  ✗ Error descargando NSSM: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  ERROR descargando NSSM: $($_.Exception.Message)" -ForegroundColor Red
         Write-Host "  Descarga manualmente desde: https://nssm.cc/download" -ForegroundColor Yellow
         exit 1
     }
 } else {
-    Write-Host "  ✓ NSSM ya está instalado" -ForegroundColor Green
+    Write-Host "  OK NSSM ya esta instalado" -ForegroundColor Green
 }
 
 # ============================================================================
@@ -87,14 +87,14 @@ Write-Host "[2/7] Verificando Python..." -ForegroundColor Green
 $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
 
 if (-not $pythonCmd) {
-    Write-Host "  ✗ Python no encontrado en PATH" -ForegroundColor Red
+    Write-Host "  ERROR Python no encontrado en PATH" -ForegroundColor Red
     Write-Host "  Instala Python 3.8+ desde: https://www.python.org/downloads/" -ForegroundColor Yellow
-    Write-Host "  Asegúrate de marcar 'Add Python to PATH' durante la instalación" -ForegroundColor Yellow
+    Write-Host "  Asegurate de marcar 'Add Python to PATH' durante la instalacion" -ForegroundColor Yellow
     exit 1
 }
 
 $pythonVersion = python --version 2>&1
-Write-Host "  ✓ $pythonVersion encontrado" -ForegroundColor Green
+Write-Host "  OK $pythonVersion encontrado" -ForegroundColor Green
 
 # ============================================================================
 # PASO 3: Crear estructura de directorios
@@ -111,12 +111,12 @@ try {
     New-Item -ItemType Directory -Path $backendPath -Force | Out-Null
     New-Item -ItemType Directory -Path $logsPath -Force | Out-Null
 
-    Write-Host "  ✓ Directorios creados:" -ForegroundColor Green
+    Write-Host "  OK Directorios creados:" -ForegroundColor Green
     Write-Host "    - $InstallPath" -ForegroundColor Gray
     Write-Host "    - $backendPath" -ForegroundColor Gray
     Write-Host "    - $logsPath" -ForegroundColor Gray
 } catch {
-    Write-Host "  ✗ Error creando directorios: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  ERROR creando directorios: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
 
@@ -131,7 +131,7 @@ $sourcePath = Split-Path -Parent $PSScriptRoot
 $sourceBackend = "$sourcePath\backend"
 
 if (-not (Test-Path $sourceBackend)) {
-    Write-Host "  ✗ No se encontró el directorio backend en: $sourceBackend" -ForegroundColor Red
+    Write-Host "  ERROR No se encontro el directorio backend en: $sourceBackend" -ForegroundColor Red
     exit 1
 }
 
@@ -145,9 +145,9 @@ try {
         Copy-Item $_.FullName -Destination $backendPath -Recurse -Force
     }
 
-    Write-Host "  ✓ Archivos copiados correctamente" -ForegroundColor Green
+    Write-Host "  OK Archivos copiados correctamente" -ForegroundColor Green
 } catch {
-    Write-Host "  ✗ Error copiando archivos: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  ERROR copiando archivos: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
 
@@ -168,7 +168,7 @@ try {
         throw "Error creando entorno virtual"
     }
 
-    Write-Host "  ✓ Entorno virtual creado en $venvPath" -ForegroundColor Green
+    Write-Host "  OK Entorno virtual creado en $venvPath" -ForegroundColor Green
 
     # Instalar dependencias
     Write-Host "  Instalando dependencias..." -ForegroundColor Gray
@@ -181,9 +181,9 @@ try {
         throw "Error instalando dependencias"
     }
 
-    Write-Host "  ✓ Dependencias instaladas correctamente" -ForegroundColor Green
+    Write-Host "  OK Dependencias instaladas correctamente" -ForegroundColor Green
 } catch {
-    Write-Host "  ✗ Error configurando entorno Python: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  ERROR configurando entorno Python: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
 
@@ -196,23 +196,30 @@ Write-Host "[6/7] Configurando variables de entorno..." -ForegroundColor Green
 
 $envFile = "$backendPath\.env"
 $envExample = "$backendPath\.env.example"
+$envProduction = "$backendPath\.env.production"
 
 if (-not (Test-Path $envFile)) {
-    if (Test-Path $envExample) {
+    # Intentar copiar .env.production primero
+    if (Test-Path $envProduction) {
+        Copy-Item $envProduction -Destination $envFile
+        Write-Host "  ADVERTENCIA Archivo .env creado desde .env.production" -ForegroundColor Yellow
+    } elseif (Test-Path $envExample) {
         Copy-Item $envExample -Destination $envFile
-        Write-Host "  ⚠ Archivo .env creado desde .env.example" -ForegroundColor Yellow
-        Write-Host "  IMPORTANTE: Debes editar $envFile con tus credenciales:" -ForegroundColor Yellow
-        Write-Host "    - DROPBOX_APP_KEY" -ForegroundColor Gray
-        Write-Host "    - DROPBOX_APP_SECRET" -ForegroundColor Gray
-        Write-Host "    - DROPBOX_REDIRECT_URI (usa tu dominio HTTPS)" -ForegroundColor Gray
-        Write-Host "    - GEMINI_API_KEY" -ForegroundColor Gray
-        Write-Host "    - FRONTEND_URL (usa tu dominio HTTPS)" -ForegroundColor Gray
+        Write-Host "  ADVERTENCIA Archivo .env creado desde .env.example" -ForegroundColor Yellow
     } else {
-        Write-Host "  ✗ No se encontró .env ni .env.example" -ForegroundColor Red
+        Write-Host "  ERROR No se encontro .env, .env.production ni .env.example" -ForegroundColor Red
         Write-Host "  Crea manualmente $envFile con las variables necesarias" -ForegroundColor Yellow
     }
+
+    Write-Host ""
+    Write-Host "  IMPORTANTE: Debes editar $envFile con tus credenciales:" -ForegroundColor Yellow
+    Write-Host "    - DROPBOX_APP_KEY" -ForegroundColor Gray
+    Write-Host "    - DROPBOX_APP_SECRET" -ForegroundColor Gray
+    Write-Host "    - DROPBOX_REDIRECT_URI (usa tu dominio HTTPS)" -ForegroundColor Gray
+    Write-Host "    - FRONTEND_URL (usa tu dominio HTTPS)" -ForegroundColor Gray
+    Write-Host ""
 } else {
-    Write-Host "  ✓ Archivo .env ya existe" -ForegroundColor Green
+    Write-Host "  OK Archivo .env ya existe" -ForegroundColor Green
 }
 
 # ============================================================================
@@ -225,7 +232,7 @@ Write-Host "[7/7] Configurando servicio Windows..." -ForegroundColor Green
 # Detener servicio si ya existe
 $existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if ($existingService) {
-    Write-Host "  Servicio existente encontrado. Deteniéndolo..." -ForegroundColor Yellow
+    Write-Host "  Servicio existente encontrado. Deteniendolo..." -ForegroundColor Yellow
     Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
 
@@ -246,10 +253,10 @@ try {
     # Configurar directorio de trabajo
     & $nssmPath set $ServiceName AppDirectory $backendPath
 
-    # Configurar descripción
+    # Configurar descripcion
     & $nssmPath set $ServiceName Description "Dropbox AI Organizer - URSALL Backend API (FastAPI/Uvicorn)"
 
-    # Configurar inicio automático
+    # Configurar inicio automatico
     & $nssmPath set $ServiceName Start SERVICE_AUTO_START
 
     # Configurar logs
@@ -259,17 +266,17 @@ try {
     & $nssmPath set $ServiceName AppStdout $stdoutLog
     & $nssmPath set $ServiceName AppStderr $stderrLog
 
-    # Configurar rotación de logs (10 MB max)
+    # Configurar rotacion de logs (10 MB max)
     & $nssmPath set $ServiceName AppStdoutCreationDisposition 4
     & $nssmPath set $ServiceName AppStderrCreationDisposition 4
     & $nssmPath set $ServiceName AppRotateFiles 1
     & $nssmPath set $ServiceName AppRotateBytes 10485760
 
-    # Configurar reinicio automático en caso de fallo
+    # Configurar reinicio automatico en caso de fallo
     & $nssmPath set $ServiceName AppExit Default Restart
     & $nssmPath set $ServiceName AppRestartDelay 5000
 
-    Write-Host "  ✓ Servicio instalado correctamente" -ForegroundColor Green
+    Write-Host "  OK Servicio instalado correctamente" -ForegroundColor Green
 
     # Iniciar servicio
     Write-Host "  Iniciando servicio..." -ForegroundColor Gray
@@ -279,14 +286,14 @@ try {
     # Verificar estado
     $service = Get-Service -Name $ServiceName
     if ($service.Status -eq "Running") {
-        Write-Host "  ✓ Servicio iniciado correctamente" -ForegroundColor Green
+        Write-Host "  OK Servicio iniciado correctamente" -ForegroundColor Green
     } else {
-        Write-Host "  ⚠ Servicio instalado pero no está corriendo" -ForegroundColor Yellow
+        Write-Host "  ADVERTENCIA Servicio instalado pero no esta corriendo" -ForegroundColor Yellow
         Write-Host "  Estado: $($service.Status)" -ForegroundColor Yellow
     }
 
 } catch {
-    Write-Host "  ✗ Error configurando servicio: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  ERROR configurando servicio: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
 
@@ -296,23 +303,23 @@ try {
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  ✓ Instalación Completada" -ForegroundColor Green
+Write-Host "  OK Instalacion Completada" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Configuración:" -ForegroundColor White
+Write-Host "Configuracion:" -ForegroundColor White
 Write-Host "  - Servicio: $ServiceName" -ForegroundColor Gray
 Write-Host "  - Puerto: $Port" -ForegroundColor Gray
 Write-Host "  - Ruta: $backendPath" -ForegroundColor Gray
 Write-Host "  - Logs: $logsPath" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Comandos útiles:" -ForegroundColor White
+Write-Host "Comandos utiles:" -ForegroundColor White
 Write-Host "  - Ver estado:     Get-Service $ServiceName" -ForegroundColor Gray
 Write-Host "  - Iniciar:        Start-Service $ServiceName" -ForegroundColor Gray
 Write-Host "  - Detener:        Stop-Service $ServiceName" -ForegroundColor Gray
 Write-Host "  - Reiniciar:      Restart-Service $ServiceName" -ForegroundColor Gray
 Write-Host "  - Ver logs:       Get-Content '$stdoutLog' -Tail 50 -Wait" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Próximos pasos:" -ForegroundColor Yellow
+Write-Host "Proximos pasos:" -ForegroundColor Yellow
 Write-Host "  1. Editar $envFile con tus credenciales" -ForegroundColor Gray
 Write-Host "  2. Reiniciar el servicio: Restart-Service $ServiceName" -ForegroundColor Gray
 Write-Host "  3. Verificar health check: curl http://localhost:$Port/health" -ForegroundColor Gray

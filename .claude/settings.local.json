@@ -52,7 +52,17 @@
       "Bash(if [ -f \"backend/.env\" ])",
       "Bash(then cat backend/.env)",
       "Bash(else echo \"Archivo .env no existe\")",
-      "Bash(where python3)"
+      "Bash(where python3)",
+      "Read(//c/Users/amartin/Desktop/**)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File ./deploy-complete.ps1)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File ./deploy-simple.ps1)",
+      "Read(//c/inetpub/wwwroot/dropbox-organizer/frontend/**)",
+      "Bash(npm run build:*)",
+      "Bash(npx vite build)",
+      "Read(//c/inetpub/wwwroot/dropbox-organizer/backend/**)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File .fix-oauth.ps1)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\amartin\\Documents\\GitHub\\Dropbox_Chatbot\\deployment\\fix-oauth.ps1\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\amartin\\Documents\\GitHub\\Dropbox_Chatbot\\deployment\\diagnose-certificate.ps1\")"
     ],
     "deny": [],
     "ask": []
