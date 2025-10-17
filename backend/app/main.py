@@ -5,7 +5,7 @@ Maneja procedimientos judiciales y proyectos jurídicos
 """
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from pydantic import BaseModel
 from pathlib import Path
 from typing import Dict, Optional
@@ -32,33 +32,34 @@ from app.path_mapper_ursall import suggest_path_ursall
 from app import auth
 from app.dropbox_uploader import upload_file_to_dropbox, create_folder_if_not_exists
 from app.gemini_rest_extractor import check_gemini_status
+from app.document_preview import generate_document_preview, check_preview_availability
 
 # Create FastAPI app
 app = FastAPI(title="Dropbox AI Organizer - URSALL Legal System")
 
 # CORS middleware for frontend
-# Support both development and production URLs with network access
-FRONTEND_URLS = os.getenv("FRONTEND_URLS", "").split(",") if os.getenv("FRONTEND_URLS") else [
-    "http://localhost:5173",
-    "https://localhost:5173",
-    "https://localhost",
-    "http://dropboxaiorganizer.com:5173",
-    "https://dropboxaiorganizer.com:5173",
-    "https://dropboxaiorganizer.com",
-    "http://dropboxaiorganizer.com",
-    # Allow access from any IP on the network with domain
-    "http://*:5173",
-    "https://*:5173"
-]
+# Support development, production URLs, and network access by IP
+FRONTEND_URLS = os.getenv("FRONTEND_URLS", "").split(",") if os.getenv("FRONTEND_URLS") else []
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=FRONTEND_URLS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+# If no custom FRONTEND_URLS, allow all origins for network access
+if not FRONTEND_URLS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allow all origins for network access by IP
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=FRONTEND_URLS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
 
 # Configuration
 TEMP_STORAGE_PATH = Path(tempfile.gettempdir()) / "dropbox_chatbot"
@@ -93,6 +94,16 @@ class UploadFinal(BaseModel):
     filename: str
     dropbox_path: str
     folder_structure: list
+
+
+class DocumentPreview(BaseModel):
+    file_id: str
+    target_use: Optional[str] = "legal"  # "legal" for URSALL, "general" for standard
+
+
+class DocumentConfirm(BaseModel):
+    file_id: str
+    confirmed: bool
 
 
 # ============================================================================
@@ -237,6 +248,222 @@ async def upload_temp(file: UploadFile = File(...)) -> Dict:
         "size": file_size,
         "extension": file_extension
     }
+
+
+# ============================================================================
+# FILE PREVIEW ENDPOINT (Visual preview before processing)
+# ============================================================================
+
+@app.get("/api/file-preview/{file_id}")
+async def get_file_preview(file_id: str):
+    """
+    Get uploaded file for visual preview in frontend
+
+    For PDFs: Returns thumbnail image of first page
+    For images: Returns the image itself
+
+    Returns the actual file so it can be displayed in the browser
+    before Dolphin processing
+    """
+    # Find temporary file
+    temp_file = None
+    for file in TEMP_STORAGE_PATH.glob(f"{file_id}_*"):
+        temp_file = file
+        break
+
+    if not temp_file or not temp_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Archivo no encontrado"
+        )
+
+    file_ext = temp_file.suffix.lower()
+
+    # For PDFs, generate thumbnail of first page
+    if file_ext == '.pdf':
+        try:
+            import fitz  # PyMuPDF
+
+            # Check if thumbnail already exists
+            thumbnail_path = TEMP_STORAGE_PATH / f"{file_id}_thumbnail.png"
+
+            if not thumbnail_path.exists():
+                # Generate thumbnail
+                logger.info(f"Generating thumbnail for PDF: {temp_file}")
+                doc = fitz.open(str(temp_file))
+
+                # Get first page
+                page = doc[0]
+
+                # Render page to image (matrix for scaling)
+                # Zoom factor 2 gives good quality
+                mat = fitz.Matrix(2, 2)
+                pix = page.get_pixmap(matrix=mat)
+
+                # Save as PNG
+                pix.save(str(thumbnail_path))
+                doc.close()
+                logger.info(f"Thumbnail generated: {thumbnail_path}")
+
+            return FileResponse(
+                path=str(thumbnail_path),
+                media_type='image/png',
+                filename=f"{temp_file.stem}_preview.png"
+            )
+
+        except ImportError:
+            logger.warning("PyMuPDF not available, returning PDF directly")
+            # Fall back to returning PDF directly
+            return FileResponse(
+                path=str(temp_file),
+                media_type='application/pdf',
+                filename=temp_file.name
+            )
+        except Exception as e:
+            logger.error(f"Error generating PDF thumbnail: {e}")
+            # Fall back to returning PDF directly
+            return FileResponse(
+                path=str(temp_file),
+                media_type='application/pdf',
+                filename=temp_file.name
+            )
+
+    # For images and other files, return directly
+    media_type_map = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+
+    media_type = media_type_map.get(file_ext, 'application/octet-stream')
+
+    return FileResponse(
+        path=str(temp_file),
+        media_type=media_type,
+        filename=temp_file.name
+    )
+
+
+# ============================================================================
+# DOCUMENT PREVIEW ENDPOINTS (New Dolphin + Gemini Integration)
+# ============================================================================
+
+@app.post("/api/document/preview")
+async def preview_document(payload: DocumentPreview) -> Dict:
+    """
+    Generate intelligent document preview using Dolphin parsing + Gemini summarization
+
+    This new endpoint:
+    1. Parses document with Dolphin (extracts text, tables, figures)
+    2. Summarizes with Gemini (identifies document type, key info)
+    3. Returns preview for user confirmation before starting questions
+
+    Args:
+        payload.file_id: ID of uploaded file
+        payload.target_use: "legal" for URSALL or "general" for standard workflow
+
+    Returns:
+        Document preview with summary, confidence, and suggested answers
+    """
+    file_id = payload.file_id
+    target_use = payload.target_use or "legal"
+
+    # Find temporary file
+    temp_file = None
+    for file in TEMP_STORAGE_PATH.glob(f"{file_id}_*"):
+        temp_file = file
+        break
+
+    if not temp_file or not temp_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Archivo temporal no encontrado. Por favor, vuelve a subir el archivo."
+        )
+
+    try:
+        # Generate preview
+        logger.info(f"Generating preview for file_id: {file_id}, target: {target_use}")
+        preview_result = await generate_document_preview(
+            file_path=str(temp_file),
+            file_id=file_id,
+            target_use=target_use
+        )
+
+        if preview_result["status"] == "error":
+            logger.error(f"Preview generation failed: {preview_result['error']}")
+            raise HTTPException(
+                status_code=500,
+                detail=preview_result["error"]
+            )
+
+        logger.info(f"Preview generated successfully for {file_id}")
+        return preview_result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in preview_document: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generando previsualización: {str(e)}"
+        )
+
+
+@app.post("/api/document/confirm")
+async def confirm_document(payload: DocumentConfirm) -> Dict:
+    """
+    User confirms or rejects the document preview
+
+    If confirmed: Document is ready for question flow
+    If rejected: Cleanup temp file
+
+    Args:
+        payload.file_id: ID of uploaded file
+        payload.confirmed: True if user confirms, False if rejects
+
+    Returns:
+        Status message
+    """
+    file_id = payload.file_id
+    confirmed = payload.confirmed
+
+    if not confirmed:
+        # User rejected - clean up temp file
+        logger.info(f"Document {file_id} rejected by user, cleaning up")
+
+        for file in TEMP_STORAGE_PATH.glob(f"{file_id}_*"):
+            try:
+                file.unlink()
+                logger.info(f"Deleted temp file: {file}")
+            except Exception as e:
+                logger.error(f"Error deleting temp file: {e}")
+
+        return {
+            "success": True,
+            "message": "Documento cancelado y eliminado correctamente"
+        }
+
+    # User confirmed - document is ready for question flow
+    logger.info(f"Document {file_id} confirmed by user")
+    return {
+        "success": True,
+        "message": "Documento confirmado. Puedes proceder con las preguntas."
+    }
+
+
+@app.get("/api/document/preview/status")
+async def preview_status() -> Dict:
+    """
+    Check availability of document preview service
+
+    Returns:
+        Status of Dolphin parser and Gemini summarizer
+    """
+    status = check_preview_availability()
+    return status
 
 
 # ============================================================================

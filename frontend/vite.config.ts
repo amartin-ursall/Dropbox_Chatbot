@@ -12,6 +12,9 @@ const certPath = path.join(sslPath, 'cert.pem')
 // Check if SSL files exist
 const sslExists = fs.existsSync(keyPath) && fs.existsSync(certPath)
 
+// Backend URL - defaults to localhost for proxy
+const backendUrl = process.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -26,16 +29,18 @@ export default defineConfig({
     cors: true, // Enable CORS for network access
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000',
+        target: backendUrl,
         changeOrigin: true,
         secure: false,
         ws: true, // Enable WebSocket proxy
+        rewrite: (path) => path,
       },
       '/auth': {
-        target: process.env.VITE_BACKEND_URL || 'http://192.168.0.98:8000',
+        target: backendUrl,
         changeOrigin: true,
         secure: false,
         ws: true,
+        rewrite: (path) => path,
       },
     },
   },

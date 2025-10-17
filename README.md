@@ -90,7 +90,37 @@ Dropbox_Chatbot/
 
 > 📖 **Guía completa de 3 pasos:** Ver [QUICK_START.md](./QUICK_START.md)
 
-### Opción 1: Scripts Automáticos (Windows)
+### Opción 1: Ejecución en Segundo Plano (Acceso por IP) ⭐ RECOMENDADO
+
+**Para acceso desde cualquier dispositivo en la red local por IP:**
+
+```bash
+# Windows
+.\start-background.ps1
+
+# Linux/Mac
+./start-background.sh
+```
+
+Accede desde cualquier dispositivo en la red:
+- **Frontend**: `http://TU_IP:5173` (ejemplo: `http://192.168.0.75:5173`)
+- **Backend**: `http://TU_IP:8000`
+- **API Docs**: `http://TU_IP:8000/docs`
+
+> 📖 **Ver documentación completa:** [docs/BACKGROUND_EXECUTION.md](./docs/BACKGROUND_EXECUTION.md)
+
+**Control de servicios:**
+```bash
+# Verificar estado
+.\status-background.ps1   # Windows
+./status-background.sh    # Linux/Mac
+
+# Detener servicios
+.\stop-background.ps1     # Windows
+./stop-background.sh      # Linux/Mac
+```
+
+### Opción 2: Scripts de Desarrollo (Con dominio local)
 
 **1. Configurar hosts file** (Una sola vez):
 ```
@@ -107,16 +137,16 @@ scripts\start-dev.bat
 scripts\start-prod.bat  # Clic derecho → Ejecutar como Administrador
 ```
 
-### Opción 2: Instalación Manual
+### Opción 3: Instalación Manual
 
-### 1. Clonar el repositorio
+#### 1. Clonar el repositorio
 
 ```bash
 git clone <url-del-repositorio>
 cd Dropbox_Chatbot
 ```
 
-### 2. Configurar credenciales de Dropbox
+#### 2. Configurar credenciales de Dropbox
 
 Crear `backend/.env` con tus credenciales:
 
@@ -131,7 +161,7 @@ FRONTEND_URL=https://dropboxaiorganizer.com
 - Para desarrollo: `http://localhost:8000/auth/dropbox/callback`
 - Para producción: `https://dropboxaiorganizer.com/auth/dropbox/callback`
 
-### 3. Configurar y ejecutar el backend
+#### 3. Configurar y ejecutar el backend
 
 ```bash
 cd backend
@@ -143,7 +173,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 El backend estará disponible en `http://localhost:8000`
 
-### 4. Configurar y ejecutar el frontend
+#### 4. Configurar y ejecutar el frontend
 
 ```bash
 cd frontend
@@ -222,6 +252,7 @@ npm run dev -- --mode production  # Requiere sudo en Linux/Mac
 
 ### 🚀 Inicio y Configuración
 - **[QUICK_START.md](./QUICK_START.md)** - Inicio rápido en 3 pasos
+- **[docs/BACKGROUND_EXECUTION.md](./docs/BACKGROUND_EXECUTION.md)** ⭐ - Ejecución en segundo plano con acceso por IP
 - **[docs/RESUMEN_CONFIGURACION.txt](./docs/RESUMEN_CONFIGURACION.txt)** - Resumen ejecutivo completo
 
 ### ⚙️ Configuración y Despliegue

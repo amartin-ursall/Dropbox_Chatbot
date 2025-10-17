@@ -19,6 +19,8 @@ import { MessageBubble } from './MessageBubble'
 import { Composer } from './Composer'
 import { MessageViewport } from './MessageViewport'
 import { FilePreviewCard } from './FilePreviewCard'
+import DocumentPreview from './DocumentPreview'
+import DocumentViewer from './DocumentViewer'
 import type { FileMetadata } from '../types/api'
 import { useNotifications } from '../contexts/NotificationContext'
 import './TypingIndicator.css'
@@ -53,6 +55,13 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
   const [simulatedResponses, setSimulatedResponses] = useState<Record<string, string>>({})  // Respuestas simuladas guardadas
   const { showSuccess, showError } = useNotifications()
 
+  // Document Preview states
+  const [showDocumentViewer, setShowDocumentViewer] = useState(false) // Visual preview BEFORE processing
+  const [showPreview, setShowPreview] = useState(false) // AI analysis AFTER processing
+  const [previewData, setPreviewData] = useState<any>(null)
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false)
+  const [previewError, setPreviewError] = useState('')
+
   // Función para generar respuesta simulada basada en la pregunta
   const generateSimulatedResponse = (question: Question, userAnswer: string): string => {
     const questionId = question.question_id
@@ -70,12 +79,137 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
     }
   }
 
-  // Start question flow when file is uploaded
+  // Show document viewer when file is uploaded (visual preview FIRST)
   useEffect(() => {
-    if (fileId) {
-      startQuestions()
+    if (fileId && !showDocumentViewer && !showPreview && !previewData) {
+      setShowDocumentViewer(true)
     }
   }, [fileId])
+
+  const generatePreview = async () => {
+    try {
+      setIsGeneratingPreview(true)
+      setPreviewError('')
+
+      const response = await fetch(`${API_BASE_URL}/api/document/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_id: fileId,
+          target_use: 'legal'  // Always use legal for now (URSALL)
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        // Si falla el preview, continuar con el flujo normal
+        console.warn('Preview failed, continuing with normal flow:', error)
+        await startQuestions()
+        return
+      }
+
+      const result = await response.json()
+
+      if (result.status === 'success' && result.preview) {
+        setPreviewData(result.preview)
+        setShowPreview(true)
+      } else {
+        // Si no hay preview válido, continuar con el flujo normal
+        await startQuestions()
+      }
+    } catch (error) {
+      console.error('Preview error:', error)
+      // En caso de error, continuar con el flujo normal
+      await startQuestions()
+    } finally {
+      setIsGeneratingPreview(false)
+    }
+  }
+
+  const handleDocumentConfirm = async () => {
+    try {
+      setIsLoading(true)
+
+      const response = await fetch(`${API_BASE_URL}/api/document/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_id: fileId,
+          confirmed: true
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        showError('Error', error.detail || 'Error al confirmar documento')
+        return
+      }
+
+      // Document confirmed, proceed with questions
+      setShowPreview(false)
+      await startQuestions()
+    } catch (error) {
+      showError('Error', 'Error de conexión al confirmar documento')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDocumentCancel = async () => {
+    try {
+      setIsLoading(true)
+
+      const response = await fetch(`${API_BASE_URL}/api/document/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_id: fileId,
+          confirmed: false
+        })
+      })
+
+      if (!response.ok) {
+        console.warn('Error canceling document, but proceeding with cleanup')
+      }
+
+      // Reset and allow user to upload new file
+      setShowPreview(false)
+      setPreviewData(null)
+      setShowDocumentViewer(false)
+      if (onCancel) {
+        onCancel()
+      }
+    } catch (error) {
+      console.error('Cancel error:', error)
+      // Still reset on error
+      setShowPreview(false)
+      setPreviewData(null)
+      setShowDocumentViewer(false)
+      if (onCancel) {
+        onCancel()
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // NEW: Handler for DocumentViewer confirmation (user sees document and clicks "Confirmar y Analizar")
+  const handleViewerConfirm = async () => {
+    // User confirmed they want to analyze this document
+    setShowDocumentViewer(false)
+    setIsGeneratingPreview(true)
+
+    // NOW process with Dolphin
+    await generatePreview()
+  }
+
+  // NEW: Handler for DocumentViewer cancel (user doesn't want this document)
+  const handleViewerCancel = () => {
+    setShowDocumentViewer(false)
+    if (onCancel) {
+      onCancel()
+    }
+  }
 
   const startQuestions = async () => {
     try {
@@ -213,10 +347,10 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
 
   const generateFilename = async (allAnswers: Record<string, string>) => {
     try {
-      // Get original extension from fileId (would come from upload response in real app)
-      const originalExtension = '.pdf' // Placeholder
+      // Get original extension from fileMetadata
+      const originalExtension = fileMetadata?.extension || '.pdf'
 
-      const response = await fetch(`${API_BASE_URL}/api/questions/generate-name`, {
+      const response = await fetch(`${API_BASE_URL}/api/questions/generate-path`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -378,10 +512,69 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
     )
   }
 
+  // STEP 1: Show document visually BEFORE processing (NEW FLOW)
+  if (showDocumentViewer && fileMetadata) {
+    return (
+      <DocumentViewer
+        fileId={fileId || ''}
+        fileName={fileMetadata.original_name}
+        fileType={fileMetadata.mime_type || fileMetadata.extension}
+        fileSize={fileMetadata.file_size || fileMetadata.size}
+        onConfirm={handleViewerConfirm}
+        onCancel={handleViewerCancel}
+        isLoading={isGeneratingPreview}
+      />
+    )
+  }
+
+  // STEP 2: Show AI analysis preview AFTER Dolphin processing
+  if (showPreview && previewData && fileMetadata) {
+    return (
+      <DocumentPreview
+        preview={previewData}
+        fileName={fileMetadata.original_name}
+        onConfirm={handleDocumentConfirm}
+        onCancel={handleDocumentCancel}
+        isLoading={isLoading}
+      />
+    )
+  }
+
   if (!currentQuestion) {
     return (
       <div className="question-flow loading">
         <p>Cargando preguntas...</p>
+      </div>
+    )
+  }
+
+  // Show preview loading state
+  if (isGeneratingPreview) {
+    return (
+      <div className="preview-loading-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '3rem',
+        gap: '1.5rem'
+      }}>
+        <div className="spinner" style={{
+          width: '50px',
+          height: '50px',
+          border: '4px solid #e5e7eb',
+          borderTopColor: '#3b82f6',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        <div style={{ textAlign: 'center' }}>
+          <h3 style={{ margin: '0 0 0.5rem 0', color: '#1f2937' }}>
+            🔍 Analizando Documento
+          </h3>
+          <p style={{ margin: 0, color: '#6b7280' }}>
+            Dolphin está extrayendo información del documento...
+          </p>
+        </div>
       </div>
     )
   }

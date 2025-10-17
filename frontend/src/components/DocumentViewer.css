@@ -1,0 +1,330 @@
+/**
+ * DocumentViewer Styles - Minimalista
+ * Siguiendo la estética de la app (dark theme, minimalista, limpio)
+ */
+
+.document-viewer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-8);
+  animation: fadeIn 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Preview Container - Minimalista */
+.preview-container {
+  position: relative;
+  width: 100%;
+  min-height: 500px;
+  max-height: 70vh;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-6);
+}
+
+.preview-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Image Display (includes PDF thumbnails) */
+.preview-image {
+  width: 100%;
+  height: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  display: block;
+  border-radius: var(--radius-md);
+}
+
+/* Loading State - Minimalista */
+.preview-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.preview-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--border-medium);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.preview-loading p {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Error State */
+.preview-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  padding: var(--space-6);
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-3);
+  opacity: 0.5;
+}
+
+.preview-error p {
+  color: var(--text-tertiary);
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Placeholder */
+.preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  height: 500px;
+}
+
+.placeholder-icon {
+  font-size: 4rem;
+  margin-bottom: var(--space-4);
+  opacity: 0.3;
+}
+
+.placeholder-text {
+  color: var(--text-primary);
+  font-size: 15px;
+  margin: 0 0 var(--space-2) 0;
+}
+
+.placeholder-hint {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Document Info - Minimalista en la parte inferior */
+.document-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  background: transparent;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Analysis Progress - Feedback visual minimalista */
+.analysis-progress {
+  padding: var(--space-6) 0;
+  text-align: center;
+  animation: fadeIn 300ms ease-out;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg,
+    var(--accent-primary) 0%,
+    var(--accent-secondary) 50%,
+    var(--accent-primary) 100%
+  );
+  background-size: 200% 100%;
+  animation: progressSlide 1.5s ease-in-out infinite;
+  border-radius: var(--radius-full);
+}
+
+@keyframes progressSlide {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.progress-text {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  margin: 0;
+  font-weight: 500;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.info-icon {
+  font-size: 1.25rem;
+  opacity: 0.6;
+}
+
+.info-text {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  word-break: break-word;
+  max-width: 300px;
+}
+
+.info-label {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.info-value {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Action Buttons - Minimalista */
+.viewer-actions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+
+.viewer-actions button {
+  flex: 1;
+  padding: var(--space-4) var(--space-6);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 200ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.btn-cancel {
+  background: transparent;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-medium);
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.btn-confirm {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: var(--accent-secondary);
+  transform: translateY(-1px);
+}
+
+.viewer-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: var(--text-inverse);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .document-viewer {
+    padding: var(--space-4);
+  }
+
+  .document-info-bar {
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: flex-start;
+  }
+
+  .preview-container {
+    min-height: 400px;
+    max-height: 60vh;
+  }
+
+  .preview-image {
+    max-height: 60vh;
+  }
+
+  .viewer-actions {
+    flex-direction: column;
+  }
+
+  .viewer-actions button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .document-viewer {
+    animation: none;
+  }
+}
