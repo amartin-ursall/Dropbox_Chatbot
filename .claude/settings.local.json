@@ -1,22 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"venv\\Scripts\\python.exe\" -m pip install --upgrade pip setuptools wheel)",
-      "Bash(\"C:\\Users\\amartin\\Documents\\Aplicativos\\Dropbox_Chatbot\\backend\\venv\\Scripts\\python.exe\" --version)",
-      "Bash(\"venv\\Scripts\\pip.exe\" install -r requirements.txt)",
-      "Bash(dir:*)",
-      "Bash(findstr:*)",
-      "Read(//c/Users/amartin/Documents/Aplicativos/**)",
-      "Bash(taskkill:*)",
-      "Bash(powershell.exe -File stop-background.ps1)",
-      "Bash(powershell.exe -File start-background.ps1)",
-      "Bash(cat:*)",
-      "Bash(powershell.exe -ExecutionPolicy Bypass -File stop-background.ps1)",
-      "Bash(powershell.exe -ExecutionPolicy Bypass -File start-background.ps1)",
-      "Bash(venvScriptspython.exe test_dolphin.py)",
-      "Bash(powershell -Command \"cd backend; .\\venv\\Scripts\\python.exe test_dolphin.py\")",
-      "Bash(powershell -Command \"cd backend; $env:PYTHONIOENCODING=''utf-8''; .\\venv\\Scripts\\python.exe test_dolphin.py\")",
-      "WebFetch(domain:github.com)"
+      "Bash(Sort-Object LastWriteTime -Descending)",
+      "Bash(Select-Object -First 1)",
+      "Bash(python test_extraction_fixes.py)",
+      "Bash(python3 test_extraction_fixes.py)",
+      "Bash(./venv/Scripts/python.exe test_extraction_fixes.py)"
     ],
     "deny": [],
     "ask": []

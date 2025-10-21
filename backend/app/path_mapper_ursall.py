@@ -1,6 +1,7 @@
 """
-Path mapper para estructura URSALL Legal
-Genera rutas de Dropbox según la estructura organizacional de URSALL Legal
+Path mapper para estructura de documentos legales
+Sistema de organización implementado para URSALL Legal (la compañía/despacho)
+Genera rutas de Dropbox con estructura organizacional profesional
 """
 import re
 from typing import Dict, Optional
@@ -177,7 +178,7 @@ def build_proyecto_name(
 
 
 def suggest_path_ursall(
-    client_name: str,
+    client_name: str,  # Cliente de URSALL Legal
     tipo_trabajo: str,  # "procedimiento" o "proyecto"
     doc_type: str = None,
     # Para procedimientos judiciales

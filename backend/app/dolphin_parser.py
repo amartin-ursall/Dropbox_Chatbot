@@ -1,12 +1,13 @@
 """
 Dolphin Parser Wrapper
 Integrates Dolphin document parsing capabilities into the application
+Supports both local model and REST API modes
 """
 
 import logging
 import os
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Literal
 from pathlib import Path
 
 # Add Dolphin directory to path
@@ -283,19 +284,119 @@ def is_dolphin_available() -> bool:
     return DOLPHIN_AVAILABLE
 
 
-def get_dolphin_parser() -> Optional[DolphinParser]:
+def get_dolphin_parser(mode: Literal["auto", "local", "api"] = "auto") -> Optional[DolphinParser]:
     """
     Get a Dolphin parser instance if available
+
+    Args:
+        mode: Parser mode:
+            - "auto": Try REST API first, fallback to local (default)
+            - "local": Use only local model
+            - "api": Use only REST API
 
     Returns:
         DolphinParser instance or None if not available
     """
-    if not DOLPHIN_AVAILABLE:
-        logger.warning("Dolphin is not available")
-        return None
+    if mode == "local":
+        # Only try local model
+        if not DOLPHIN_AVAILABLE:
+            logger.warning("Dolphin local model is not available")
+            return None
+        try:
+            return DolphinParser()
+        except Exception as e:
+            logger.error(f"Failed to initialize Dolphin local parser: {e}")
+            return None
 
-    try:
-        return DolphinParser()
-    except Exception as e:
-        logger.error(f"Failed to initialize Dolphin parser: {e}")
-        return None
+    elif mode == "api":
+        # Only try REST API - imported here to avoid circular import
+        try:
+            from .dolphin_rest_client import is_dolphin_api_available
+            if not is_dolphin_api_available():
+                logger.warning("Dolphin REST API is not available")
+                return None
+            logger.info("Using Dolphin REST API mode")
+            return None  # Signal to use DolphinRestClient instead
+        except Exception as e:
+            logger.error(f"Failed to check Dolphin REST API: {e}")
+            return None
+
+    else:  # mode == "auto"
+        # Try REST API first
+        try:
+            from .dolphin_rest_client import is_dolphin_api_available
+            if is_dolphin_api_available():
+                logger.info("Using Dolphin REST API mode (auto)")
+                return None  # Signal to use DolphinRestClient instead
+        except Exception as e:
+            logger.debug(f"Dolphin REST API not available: {e}")
+
+        # Fallback to local model
+        if not DOLPHIN_AVAILABLE:
+            logger.warning("Neither Dolphin API nor local model are available")
+            return None
+
+        try:
+            logger.info("Falling back to Dolphin local model")
+            return DolphinParser()
+        except Exception as e:
+            logger.error(f"Failed to initialize Dolphin parser: {e}")
+            return None
+
+
+async def parse_document_with_dolphin(
+    document_path: str,
+    max_batch_size: int = 16,
+    mode: Literal["auto", "local", "api"] = "auto"
+) -> Tuple[Dict, float]:
+    """
+    Parse a document using Dolphin (REST API or local model)
+
+    This is a high-level function that automatically selects the best
+    available Dolphin backend.
+
+    Args:
+        document_path: Path to document file (PDF, JPG, PNG, JPEG)
+        max_batch_size: Max batch size for parallel processing
+        mode: Parser mode:
+            - "auto": Try REST API first, fallback to local (default)
+            - "local": Use only local model
+            - "api": Use only REST API
+
+    Returns:
+        Tuple of (parsed_content, confidence_score)
+
+    Raises:
+        Exception: If parsing fails or no backend is available
+    """
+    # Try REST API first (if mode allows)
+    if mode in ["auto", "api"]:
+        try:
+            from .dolphin_rest_client import DolphinRestClient, is_dolphin_api_available
+
+            if is_dolphin_api_available():
+                logger.info("Using Dolphin REST API for parsing")
+                client = DolphinRestClient()
+                return await client.parse_document(document_path, max_batch_size)
+        except Exception as e:
+            if mode == "api":
+                # API-only mode, don't fallback
+                raise Exception(f"Dolphin REST API parsing failed: {e}")
+            else:
+                # Auto mode, log and try local
+                logger.warning(f"Dolphin REST API failed, trying local model: {e}")
+
+    # Try local model (if mode allows)
+    if mode in ["auto", "local"]:
+        parser = get_dolphin_parser(mode="local")
+        if parser:
+            logger.info("Using Dolphin local model for parsing")
+            # Local parser is synchronous
+            return parser.parse_document(document_path, max_batch_size)
+
+    # No backend available
+    raise Exception(
+        "No Dolphin backend available. Please either:\n"
+        "1. Configure DOLPHIN_API_URL in .env to use REST API, or\n"
+        "2. Install local Dolphin dependencies"
+    )

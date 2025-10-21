@@ -504,15 +504,44 @@ async def answer_question(payload: QuestionAnswer) -> Dict:
 
     session = ursall_sessions[file_id]
 
-    # STEP 1: Extract information using legal NLP
+    # STEP 1: Extract information using AI (Gemini preferred) or NLP fallback
+    logger.info(f"=== Procesando respuesta ===")
+    logger.info(f"Pregunta ID: {question_id}")
     logger.info(f"Respuesta original: {answer}")
 
-    try:
-        extracted_answer = extract_information_legal(question_id, answer)
-        logger.info(f"Información extraída: {extracted_answer}")
-    except Exception as e:
-        logger.error(f"Error en extracción NLP: {e}")
-        extracted_answer = answer.strip()
+    # Try Gemini AI extraction first for better accuracy
+    from app.gemini_rest_extractor import extract_with_gemini_rest, GEMINI_AVAILABLE
+
+    extracted_answer = answer.strip()
+
+    if GEMINI_AVAILABLE and question_id in ["tipo_trabajo", "doc_type_proc", "doc_type_proyecto", "client"]:
+        try:
+            logger.info(f"Intentando extracción con Gemini AI para: {question_id}")
+            gemini_result = await extract_with_gemini_rest(question_id, answer)
+            if gemini_result and gemini_result.upper() != "AMBIGUO":
+                extracted_answer = gemini_result
+                logger.info(f"✓ Gemini extrajo: {extracted_answer}")
+            else:
+                logger.info("Gemini retornó AMBIGUO, usando NLP legal...")
+                extracted_answer = extract_information_legal(question_id, answer)
+                logger.info(f"✓ NLP legal extrajo: {extracted_answer}")
+        except Exception as e:
+            logger.warning(f"Gemini falló, usando NLP legal: {e}")
+            try:
+                extracted_answer = extract_information_legal(question_id, answer)
+                logger.info(f"✓ NLP legal extrajo: {extracted_answer}")
+            except:
+                extracted_answer = answer.strip()
+                logger.warning(f"Extracción falló, usando respuesta original: {extracted_answer}")
+    else:
+        # Use legal NLP extractor
+        try:
+            extracted_answer = extract_information_legal(question_id, answer)
+            logger.info(f"✓ NLP legal extrajo: {extracted_answer}")
+        except Exception as e:
+            logger.error(f"Error en extracción NLP: {e}")
+            extracted_answer = answer.strip()
+            logger.warning(f"Usando respuesta original: {extracted_answer}")
 
     # STEP 2: Basic validations with clear error messages
     if not extracted_answer:
@@ -536,18 +565,52 @@ async def answer_question(payload: QuestionAnswer) -> Dict:
         )
 
     # STEP 3: Specific validations per question type with clear messages
-    if question_id == "tipo_trabajo":
-        if extracted_answer.lower() not in ["procedimiento", "proyecto"]:
+    if question_id == "categoria":
+        # Validar categoría (legal o seguros)
+        if extracted_answer not in ["legal", "seguros"]:
             raise HTTPException(
                 status_code=400,
                 detail={
-                    "error": "tipo_trabajo_invalido",
-                    "message": "El tipo de trabajo debe ser 'procedimiento' o 'proyecto'. Por favor, selecciona una opción válida.",
+                    "error": "categoria_ambigua",
+                    "message": "No pude determinar la categoría. Por favor responde 'legal' o 'seguros'.",
                     "field": question_id,
-                    "valid_options": ["procedimiento", "proyecto"]
+                    "user_input": answer,
+                    "valid_options": ["legal", "seguros"],
+                    "examples": [
+                        "Legal",
+                        "Es un documento legal",
+                        "Judicial",
+                        "Seguros",
+                        "Es una póliza de seguros",
+                        "Siniestro"
+                    ]
                 }
             )
-        extracted_answer = extracted_answer.lower()
+        logger.info(f"Categoría identificada: {extracted_answer}")
+
+    elif question_id == "tipo_trabajo":
+        # El NLP extractor ya procesó la respuesta
+        if extracted_answer not in ["procedimiento", "proyecto"]:
+            # Si el extractor no pudo determinar el tipo, pedir aclaración
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "tipo_trabajo_ambiguo",
+                    "message": "No pude determinar si es un procedimiento judicial o un proyecto jurídico. Por favor responde con 'procedimiento' o 'proyecto'.",
+                    "field": question_id,
+                    "user_input": answer,
+                    "valid_options": ["procedimiento", "proyecto"],
+                    "examples": [
+                        "Procedimiento judicial",
+                        "Procedimiento",
+                        "Es un procedimiento",
+                        "Proyecto jurídico",
+                        "Proyecto",
+                        "Es un informe legal (proyecto)"
+                    ]
+                }
+            )
+        logger.info(f"Tipo de trabajo identificado: {extracted_answer}")
 
     elif question_id == "num_procedimiento":
         # Validate format XXX/YYYY
@@ -644,12 +707,13 @@ async def answer_question(payload: QuestionAnswer) -> Dict:
 async def generate_path(payload: GeneratePath) -> Dict:
     """
     Generate path and filename according to URSALL structure
+    Soporta: Legal (Procedimientos y Proyectos) y Seguros
     """
     file_id = payload.file_id
     answers = payload.answers
     extension = payload.original_extension
 
-    logger.info(f"=== Generando ruta URSALL para file_id: {file_id} ===")
+    logger.info(f"=== Generando ruta para file_id: {file_id} ===")
     logger.info(f"Answers recibidas en payload: {answers}")
 
     # Get session
@@ -659,6 +723,56 @@ async def generate_path(payload: GeneratePath) -> Dict:
     extracted_answers = session.get("extracted_answers", answers)
     logger.info(f"Extracted answers desde sesión: {extracted_answers}")
 
+    # Determinar categoría
+    categoria = extracted_answers.get("categoria", "legal")  # Por defecto legal para retrocompatibilidad
+    logger.info(f"Categoría: {categoria}")
+
+    # Si es Seguros, manejar diferente
+    if categoria == "seguros":
+        from app.path_mapper_seguros import suggest_path_seguros
+
+        # Validar campos de seguros
+        required_seguros = ["compania_seguro", "tomador_seguro", "ramo_seguro", "fecha_seguro", "doc_type_seguro", "tipo_seguro"]
+        missing = [f for f in required_seguros if not extracted_answers.get(f)]
+
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "campos_faltantes",
+                    "message": f"Faltan campos requeridos para Seguros: {', '.join(missing)}",
+                    "missing_fields": missing
+                }
+            )
+
+        # Generar ruta de seguros
+        path_info = suggest_path_seguros(
+            compania=extracted_answers["compania_seguro"],
+            tomador=extracted_answers["tomador_seguro"],
+            ramo=extracted_answers["ramo_seguro"],
+            tipo_seguro=extracted_answers["tipo_seguro"],
+            fecha=extracted_answers["fecha_seguro"],
+            doc_type=extracted_answers["doc_type_seguro"]
+        )
+
+        # Generar nombre de archivo para seguros
+        fecha = extracted_answers["fecha_seguro"]
+        tipo = sanitize_filename_part(extracted_answers["tipo_seguro"])
+        doc_type = sanitize_filename_part(extracted_answers["doc_type_seguro"])
+        suggested_name = f"{fecha}_{tipo}_{doc_type}{extension}"
+
+        full_path = f"{path_info['full_path']}/{suggested_name}"
+
+        return {
+            "suggested_name": suggested_name,
+            "suggested_path": path_info["full_path"],
+            "full_path": full_path,
+            "folder_structure": path_info["folder_structure"],
+            "tipo": "seguros",
+            "subfolder": path_info["subfolder"]
+        }
+
+    # Si es Legal, continuar con la lógica URSALL existente
     # Validate answers
     validation = validate_ursall_answers(extracted_answers)
     if not validation["valid"]:

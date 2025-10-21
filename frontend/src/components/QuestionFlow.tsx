@@ -391,23 +391,16 @@ export function QuestionFlow({ fileId, fileMetadata, onComplete, onCancel, onErr
     try {
       setIsLoading(true)
 
-      // Usar endpoint URSALL si hay folder_structure
-      const endpoint = folderStructure.length > 0
-        ? `${API_BASE_URL}/api/ursall/upload-final`
-        : `${API_BASE_URL}/api/upload-final`
+      // Siempre usar el mismo endpoint - el backend maneja ambos casos (URSALL y estándar)
+      const endpoint = `${API_BASE_URL}/api/upload-final`
 
-      const body = folderStructure.length > 0
-        ? {
-            file_id: fileId,
-            filename: suggestedName,
-            dropbox_path: suggestedPath,
-            folder_structure: folderStructure
-          }
-        : {
-            file_id: fileId,
-            new_filename: suggestedName,
-            dropbox_path: suggestedPath
-          }
+      // Estructura consistente del body - el backend espera estos campos
+      const body = {
+        file_id: fileId,
+        filename: suggestedName,
+        dropbox_path: suggestedPath,
+        folder_structure: folderStructure || []  // Array vacío si no es URSALL
+      }
 
       const response = await fetch(endpoint, {
         method: 'POST',

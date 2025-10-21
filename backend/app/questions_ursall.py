@@ -1,27 +1,61 @@
 """
-Question flow logic for URSALL Legal structure
-Maneja dos flujos: Procedimientos Judiciales y Proyectos Jurídicos
+Question flow logic for document organization
+Sistema de organización de documentos para URSALL Legal
+Maneja múltiples categorías: Legal (Procedimientos y Proyectos) y Seguros
 """
 from typing import Dict, Optional, List, Any
 
 
 # Definición de flujos de preguntas para URSALL
 QUESTIONS_URSALL = {
-    # Pregunta inicial: determinar tipo de trabajo
+    # ============= PREGUNTA INICIAL: CATEGORÍA =============
+    "categoria": {
+        "question_id": "categoria",
+        "question_text": "¿A qué categoría pertenece este documento?",
+        "required": True,
+        "validation": {"type": "choice", "choices": ["legal", "seguros"]},
+        "next_conditional": {
+            "categoria": {
+                "legal": "tipo_trabajo",
+                "seguros": "tipo_seguro"
+            }
+        },
+        "help_text": "Selecciona la categoría principal del documento. Legal incluye procedimientos judiciales y proyectos jurídicos. Seguros incluye pólizas, siniestros y documentación de seguros.",
+        "examples": [
+            "Legal",
+            "Es un documento legal",
+            "Seguros",
+            "Es una póliza de seguros",
+            "Documentación judicial (legal)",
+            "Siniestro de seguros"
+        ]
+    },
+
+    # ============= FLUJO LEGAL =============
+    # Pregunta: determinar tipo de trabajo legal
     "tipo_trabajo": {
         "question_id": "tipo_trabajo",
-        "question_text": "¿Es un Procedimiento Judicial o un Proyecto Jurídico? (escribe: procedimiento o proyecto)",
+        "question_text": "¿De qué tipo de trabajo legal se trata?",
         "required": True,
         "validation": {"type": "choice", "choices": ["procedimiento", "proyecto"]},
         "next": "client",
-        "help_text": "Selecciona 'procedimiento' para documentos relacionados con casos judiciales o 'proyecto' para trabajos jurídicos no judiciales.",
-        "examples": ["procedimiento", "proyecto"]
+        "flow": "legal",
+        "help_text": "Puedes responder con lenguaje natural. Por ejemplo: 'Es un juicio', 'Procedimiento judicial', 'Es un proyecto de asesoría', 'Informe legal', etc. El sistema interpretará tu respuesta.",
+        "examples": [
+            "Es un procedimiento judicial",
+            "Un juicio en el juzgado social",
+            "Es un proyecto de asesoría legal",
+            "Informe jurídico para cliente",
+            "Demanda laboral",
+            "Proyecto de consultoría"
+        ]
     },
 
-    # Cliente (común para ambos flujos)
+    # Cliente (común para flujos legales)
+    # Nota: URSALL es la compañía/despacho que implementa este sistema
     "client": {
         "question_id": "client",
-        "question_text": "¿Cuál es el nombre del cliente? (ej: GRUPO GORETTI, JJ. TEALQUILA Y GESTIONA SL)",
+        "question_text": "¿Cuál es el nombre del cliente?",
         "required": True,
         "validation": {"min_length": 2},
         "next_conditional": {
@@ -30,21 +64,29 @@ QUESTIONS_URSALL = {
                 "proyecto": "proyecto_year"
             }
         },
-        "help_text": "Introduce el nombre completo del cliente. Para grupos empresariales, usa el formato 'GRUPO + NOMBRE'.",
-        "examples": ["GRUPO GORETTI", "JJ. TEALQUILA Y GESTIONA SL", "Ayuntamiento Adeje"]
+        "help_text": "Introduce el nombre completo del cliente de URSALL Legal. Para grupos empresariales, usa el formato 'GRUPO + NOMBRE'.",
+        "examples": ["GRUPO GORETTI", "JJ. TEALQUILA Y GESTIONA SL", "Ayuntamiento Adeje", "Empresa ABC SL"]
     },
 
     # ============= FLUJO PROCEDIMIENTO JUDICIAL =============
 
     "jurisdiccion": {
         "question_id": "jurisdiccion",
-        "question_text": "¿Qué tipo de juzgado es? (contencioso, social, civil, penal, instrucción)",
+        "question_text": "¿Qué tipo de juzgado o jurisdicción es?",
         "required": True,
         "validation": {"type": "choice", "choices": ["contencioso", "social", "civil", "penal", "instrucción", "instruccion"]},
         "next": "juzgado_num",
         "flow": "procedimiento",
-        "help_text": "Selecciona la jurisdicción del procedimiento. Esto determinará la abreviatura en la ruta (CA, SC, CIV, PEN, JPI).",
-        "examples": ["social", "contencioso administrativo", "Juzgado de lo Social"]
+        "help_text": "Puedes responder con lenguaje natural. El sistema interpreta: 'social', 'juzgado de lo social', 'contencioso', 'contencioso-administrativo', 'civil', 'penal', 'instrucción', etc.",
+        "examples": [
+            "social",
+            "Juzgado de lo Social",
+            "contencioso administrativo",
+            "Juzgado de lo Contencioso-Administrativo",
+            "civil",
+            "penal",
+            "instrucción"
+        ]
     },
 
     "juzgado_num": {
@@ -115,13 +157,21 @@ QUESTIONS_URSALL = {
 
     "doc_type_proc": {
         "question_id": "doc_type_proc",
-        "question_text": "¿Tipo de documento? (ej: Escrito, Sentencia, Pericial, Notificación)",
+        "question_text": "¿Qué tipo de documento judicial es?",
         "required": True,
         "validation": {"min_length": 2},
         "next": None,  # Última pregunta del flujo procedimiento
         "flow": "procedimiento",
-        "help_text": "El tipo de documento determinará la subcarpeta donde se guardará. Consulta la tabla de mapeo en la documentación.",
-        "examples": ["Sentencia", "Escrito de demanda", "Informe pericial", "Notificación del juzgado"]
+        "help_text": "Describe el documento con lenguaje natural. Ejemplos: 'Es una demanda', 'Sentencia del juzgado', 'Recurso de apelación', 'Informe pericial', etc. El sistema lo clasificará automáticamente.",
+        "examples": [
+            "Es una demanda",
+            "Sentencia del juzgado",
+            "Recurso de apelación",
+            "Escrito de contestación",
+            "Informe pericial",
+            "Notificación judicial",
+            "Auto del juzgado"
+        ]
     },
 
     # ============= FLUJO PROYECTO JURÍDICO =============
@@ -172,20 +222,108 @@ QUESTIONS_URSALL = {
 
     "doc_type_proyecto": {
         "question_id": "doc_type_proyecto",
-        "question_text": "¿Tipo de documento? (ej: Informe, Borrador, Contrato, Comunicación)",
+        "question_text": "¿Qué tipo de documento es este proyecto?",
         "required": True,
         "validation": {"min_length": 2},
         "next": None,  # Última pregunta del flujo proyecto
         "flow": "proyecto",
-        "help_text": "El tipo de documento determinará la subcarpeta donde se guardará. Consulta la tabla de mapeo en la documentación.",
-        "examples": ["Informe", "Borrador", "Contrato", "Comunicación"]
+        "help_text": "Describe el documento con lenguaje natural. Ejemplos: 'Es un informe jurídico', 'Borrador de contrato', 'Dictamen legal', 'Comunicación al cliente', etc. El sistema lo clasificará automáticamente.",
+        "examples": [
+            "Es un informe jurídico",
+            "Borrador de contrato",
+            "Dictamen legal",
+            "Opinión legal",
+            "Comunicación al cliente",
+            "Documento de trabajo",
+            "Memoria del proyecto"
+        ]
+    },
+
+    # ============= FLUJO SEGUROS (PROVISIONAL) =============
+
+    "tipo_seguro": {
+        "question_id": "tipo_seguro",
+        "question_text": "¿Qué tipo de documento de seguros es?",
+        "required": True,
+        "validation": {"type": "choice", "choices": ["poliza", "siniestro", "comunicacion", "otro"]},
+        "next": "compania_seguro",
+        "flow": "seguros",
+        "help_text": "Indica el tipo de documento relacionado con seguros.",
+        "examples": [
+            "Póliza",
+            "Es una póliza de seguros",
+            "Siniestro",
+            "Comunicación con aseguradora",
+            "Otro documento de seguros"
+        ]
+    },
+
+    "compania_seguro": {
+        "question_id": "compania_seguro",
+        "question_text": "¿Cuál es la compañía aseguradora?",
+        "required": True,
+        "validation": {"min_length": 2},
+        "next": "tomador_seguro",
+        "flow": "seguros",
+        "help_text": "Introduce el nombre de la compañía de seguros.",
+        "examples": ["MAPFRE", "AXA", "Allianz", "Mutua Madrileña"]
+    },
+
+    "tomador_seguro": {
+        "question_id": "tomador_seguro",
+        "question_text": "¿Quién es el tomador del seguro? (cliente/asegurado)",
+        "required": True,
+        "validation": {"min_length": 2},
+        "next": "ramo_seguro",
+        "flow": "seguros",
+        "help_text": "Introduce el nombre del cliente o persona asegurada.",
+        "examples": ["Juan Pérez García", "Empresa XYZ SL", "María López"]
+    },
+
+    "ramo_seguro": {
+        "question_id": "ramo_seguro",
+        "question_text": "¿Qué ramo de seguro es? (salud, auto, hogar, vida, etc.)",
+        "required": True,
+        "validation": {"min_length": 2},
+        "next": "fecha_seguro",
+        "flow": "seguros",
+        "help_text": "Indica el tipo de seguro o ramo.",
+        "examples": ["Salud", "Automóvil", "Hogar", "Vida", "Responsabilidad Civil"]
+    },
+
+    "fecha_seguro": {
+        "question_id": "fecha_seguro",
+        "question_text": "¿Fecha del documento? (formato: YYYY-MM-DD)",
+        "required": True,
+        "validation": {"format": "date"},
+        "next": "doc_type_seguro",
+        "flow": "seguros",
+        "help_text": "Introduce la fecha del documento en formato YYYY-MM-DD.",
+        "examples": ["2025-01-15", "2024-12-20"]
+    },
+
+    "doc_type_seguro": {
+        "question_id": "doc_type_seguro",
+        "question_text": "Descripción específica del documento",
+        "required": True,
+        "validation": {"min_length": 2},
+        "next": None,  # Última pregunta del flujo seguros
+        "flow": "seguros",
+        "help_text": "Describe el documento de forma breve.",
+        "examples": [
+            "Póliza original",
+            "Parte de siniestro",
+            "Comunicación de baja",
+            "Recibo de pago",
+            "Certificado de seguros"
+        ]
     },
 }
 
 
 def get_first_question_ursall() -> Dict:
-    """Obtener la primera pregunta del flujo URSALL"""
-    question = QUESTIONS_URSALL["tipo_trabajo"].copy()
+    """Obtener la primera pregunta del flujo URSALL (categoría)"""
+    question = QUESTIONS_URSALL["categoria"].copy()
     question.pop("next", None)
     question.pop("next_conditional", None)
     return question

@@ -19,9 +19,11 @@ JURISDICCION_PATTERNS = [
 # Patrones para número de juzgado (orden de especificidad)
 JUZGADO_NUM_PATTERNS = [
     r'(?:juzgado|jdo\.?)\s+(?:n[úuº°]?\s*|numero\s+|número\s+)?(\d+)',  # "juzgado numero 2", "juzgado nº 2"
+    r'(?:juzgado|jdo\.?)\s+(?:social|contencioso|civil|penal|instrucción|instruccion)\s+(\d+)',  # "Juzgado Social 4"
     r'(?:número|numero|nº|n\.?)\s+(?:del?\s+juzgado\s+)?(\d+)',  # "numero 2", "número del juzgado 2"
     r'(?:es\s+el\s+)?(?:juzgado\s+)?(?:numero|número)\s+(\d+)',  # "es el juzgado numero 2"
     r'\b([A-Z]{2,3})(\d+)\b',  # "CA1", "SC2" (dos grupos)
+    r'^\s*(\d+)\s*$',  # Solo un número (ej: "2", " 3 ")
 ]
 
 # Patrones para demarcación
@@ -49,6 +51,91 @@ MATERIA_PATTERNS = [
     r'(?:materia|asunto|sobre|relativo\s+a)[:\s]+([A-ZÁÉÍÓÚ][a-záéíóúñ]+)',
     r'(?:despido|fijeza|urbanismo|reclamación|indemnización|art\.?\s*\d+)',
 ]
+
+
+def extract_categoria(user_input: str) -> Optional[str]:
+    """
+    Extrae la categoría principal (legal o seguros)
+
+    Ejemplos:
+    - "es un documento legal" → "legal"
+    - "judicial" → "legal"
+    - "es una póliza de seguros" → "seguros"
+    - "siniestro" → "seguros"
+    """
+    user_input_lower = user_input.lower().strip()
+
+    # Palabras clave para Legal
+    legal_keywords = [
+        "legal", "juridico", "jurídico", "judicial", "procedimiento",
+        "juzgado", "tribunal", "jurisdicción", "jurisdiccion",
+        "contencioso", "social", "civil", "penal", "instrucción", "instruccion",
+        "sentencia", "auto", "providencia", "demanda", "recurso",
+        "proyecto", "informe legal", "dictamen", "asesor", "consultoria"
+    ]
+
+    # Palabras clave para Seguros
+    seguros_keywords = [
+        "seguro", "seguros", "poliza", "póliza", "aseguradora",
+        "siniestro", "prima", "cobertura", "indemnizacion", "indemnización",
+        "asegurado", "tomador", "beneficiario", "riesgo", "franquicia"
+    ]
+
+    # Contar coincidencias
+    legal_matches = sum(1 for kw in legal_keywords if kw in user_input_lower)
+    seguros_matches = sum(1 for kw in seguros_keywords if kw in user_input_lower)
+
+    # Decidir basado en coincidencias
+    if legal_matches > seguros_matches:
+        return "legal"
+    elif seguros_matches > legal_matches:
+        return "seguros"
+
+    # Si hay empate o ninguna coincidencia, devolver None
+    return None
+
+
+def extract_tipo_trabajo(user_input: str) -> Optional[str]:
+    """
+    Extrae el tipo de trabajo (procedimiento o proyecto)
+
+    Ejemplos:
+    - "es un documento judicial" → "procedimiento"
+    - "procedimiento judicial" → "procedimiento"
+    - "proyecto de asesoría" → "proyecto"
+    - "informe legal" → "proyecto"
+    - "judicial" → "procedimiento"
+    """
+    user_input_lower = user_input.lower().strip()
+
+    # Palabras clave para procedimiento judicial
+    procedimiento_keywords = [
+        "procedimiento", "judicial", "juicio", "demanda", "recurso",
+        "juzgado", "tribunal", "jurisdicción", "jurisdiccion",
+        "contencioso", "social", "civil", "penal", "instrucción", "instruccion",
+        "sentencia", "auto", "providencia", "notificación", "notificacion",
+        "autos", "pleito", "litigio", "causa"
+    ]
+
+    # Palabras clave para proyecto jurídico
+    proyecto_keywords = [
+        "proyecto", "asesor", "consultoria", "consultoría",
+        "opinion", "opinión", "informe", "dictamen", "estudio",
+        "analisis", "análisis", "consulta", "asesoramiento"
+    ]
+
+    # Contar coincidencias de cada tipo
+    proc_matches = sum(1 for kw in procedimiento_keywords if kw in user_input_lower)
+    proy_matches = sum(1 for kw in proyecto_keywords if kw in user_input_lower)
+
+    # Decidir basado en coincidencias
+    if proc_matches > proy_matches:
+        return "procedimiento"
+    elif proy_matches > proc_matches:
+        return "proyecto"
+
+    # Si hay empate o ninguna coincidencia, devolver None para que main.py maneje el error
+    return None
 
 
 def extract_jurisdiccion(user_input: str) -> Optional[str]:
@@ -352,6 +439,8 @@ def extract_information_legal(question_id: str, user_input: str) -> any:
         Información extraída según el tipo de pregunta
     """
     extractors = {
+        "categoria": extract_categoria,  # ← NUEVO: Extractor para categoría
+        "tipo_trabajo": extract_tipo_trabajo,  # Extractor para tipo de trabajo
         "jurisdiccion": extract_jurisdiccion,
         "juzgado_num": extract_juzgado_numero,
         "juzgado_numero": extract_juzgado_numero,  # Alias

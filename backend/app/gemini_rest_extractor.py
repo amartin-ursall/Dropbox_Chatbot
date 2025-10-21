@@ -40,6 +40,27 @@ async def extract_with_gemini_rest(question_id: str, user_input: str) -> Optiona
 
     # Define prompts for each question type
     prompts = {
+        "tipo_trabajo": f"""Eres un asistente experto en clasificar tipos de trabajo legal en español.
+
+TAREA: Determina si el usuario se refiere a un PROCEDIMIENTO JUDICIAL o un PROYECTO JURÍDICO.
+
+REGLAS ESTRICTAS:
+1. Si menciona: demanda, juicio, procedimiento judicial, recurso, juzgado, tribunal → responde "procedimiento"
+2. Si menciona: proyecto, asesoría, consultoría, informe, opinión legal, dictamen → responde "proyecto"
+3. Si es ambiguo o no está claro, responde exactamente: "AMBIGUO"
+4. Responde SOLO con: "procedimiento", "proyecto" o "AMBIGUO"
+
+EJEMPLOS:
+- "Es un procedimiento judicial" → procedimiento
+- "Un juicio" → procedimiento
+- "Proyecto de asesoría" → proyecto
+- "Es para un informe legal" → proyecto
+- "no sé" → AMBIGUO
+
+ENTRADA DEL USUARIO: "{user_input}"
+
+RESPUESTA (procedimiento, proyecto o AMBIGUO):""",
+
         "client": f"""Eres un asistente experto en extraer nombres de clientes de texto en español.
 
 TAREA: Extrae ÚNICAMENTE el nombre del cliente de la siguiente entrada del usuario.
@@ -117,7 +138,58 @@ EJEMPLOS:
 
 ENTRADA DEL USUARIO: "{user_input}"
 
-RESPUESTA (formato YYYY-MM-DD o AMBIGUO):"""
+RESPUESTA (formato YYYY-MM-DD o AMBIGUO):""",
+
+        "doc_type_proc": f"""Eres un asistente experto en clasificar documentos judiciales en español.
+
+TAREA: Extrae el tipo de documento judicial de la entrada del usuario.
+
+TIPOS COMUNES:
+- Demanda, Contestación, Escrito de conclusiones, Recurso de apelación, Recurso de casación
+- Sentencia, Auto, Providencia, Diligencia
+- Prueba documental, Prueba pericial, Prueba testifical
+
+REGLAS:
+1. Extrae solo el tipo de documento
+2. Elimina artículos y palabras introductorias
+3. Mantén formato apropiado con mayúsculas (ej: "Demanda", "Recurso de apelación")
+4. Si es ambiguo, responde "AMBIGUO"
+
+EJEMPLOS:
+- "Es una demanda" → Demanda
+- "escrito de contestación" → Contestación
+- "Un recurso de apelación" → Recurso de apelación
+- "no sé" → AMBIGUO
+
+ENTRADA DEL USUARIO: "{user_input}"
+
+RESPUESTA:""",
+
+        "doc_type_proyecto": f"""Eres un asistente experto en clasificar documentos de proyectos jurídicos.
+
+TAREA: Extrae el tipo de documento de proyecto legal.
+
+TIPOS COMUNES:
+- Informe jurídico, Dictamen, Opinión legal, Memoria
+- Contrato, Convenio, Acuerdo
+- Estatutos, Reglamento, Política
+- Documento de trabajo, Borrador
+
+REGLAS:
+1. Extrae solo el tipo de documento
+2. Elimina artículos y palabras introductorias
+3. Mantén formato apropiado con mayúsculas
+4. Si es ambiguo, responde "AMBIGUO"
+
+EJEMPLOS:
+- "Es un informe jurídico" → Informe jurídico
+- "Un contrato" → Contrato
+- "Borrador de convenio" → Convenio
+- "no estoy seguro" → AMBIGUO
+
+ENTRADA DEL USUARIO: "{user_input}"
+
+RESPUESTA:"""
     }
 
     prompt = prompts.get(question_id)
